@@ -6,8 +6,31 @@
 class ClauseSet(c:Array<Clause>)
 {
     private var clauses : MutableList<Clause> = c.toMutableList()
+    /**
+     * stores for every variable the occurences in clauses
+     * the map itself is not mutable, because no new variables can pop up,
+     * but new clauses can be created
+     */
+    private var occurences : Map<Variable,MutableSet<Clause>>
+    init {
+        var mutableOccurences:MutableMap<Variable,MutableSet<Clause>> = mutableMapOf()
+        for (c: Clause in this.clauses) {
+            for (v: Variable in c.literals.map { it.variable }) {
+                var occurenceSet: MutableSet<Clause>? = mutableOccurences.get(v)
+                if (occurenceSet == null) {
+                    occurenceSet = mutableSetOf()
+                    occurenceSet.add(c)
+                    mutableOccurences.put(v, occurenceSet)
+                } else {
+                    occurenceSet.add(c)
+                }
+            }
+        }
 
-    constructor(cs:String):this(cs,VariableSet())
+        occurences = mutableOccurences.toMap()
+    }
+
+    constructor(cs:String):this(cs,VariableSet()) //integrate the below into this constructor
     private constructor(cs:String,vs:VariableSet)  :
             this(cs.split(delimiters="&").
                     map { c:String -> Clause(c,vs) }.toTypedArray())
@@ -84,7 +107,6 @@ class ClauseSet(c:Array<Clause>)
         //there must be any free variable, that is needs to
         //be set in a nontrivial way
         val freeVariable:Variable = this.getAnyFreeVariable()!!
-        println(freeVariable)
 
         //try true
         freeVariable.setTo(VariableSetting.True)
@@ -117,7 +139,7 @@ class ClauseSet(c:Array<Clause>)
     fun printVarSettings(): Unit {
         val alreadyPrintedVars:MutableSet<Variable> = mutableSetOf()
         for (c: Clause in this.clauses) {
-            for (v: Variable in c.factors.map { it.first }) {
+            for (v: Variable in c.literals.map { it.first }) {
                 if (alreadyPrintedVars.contains(v)) {
                     continue;
                 } else {

@@ -1,5 +1,3 @@
-import com.sun.org.apache.xpath.internal.operations.Bool
-
 typealias VariableIdentifier = String
 enum class VariableSetting {True,False,Unset}
 
@@ -43,7 +41,7 @@ class Variable constructor(c: VariableIdentifier)
 
     override fun toString():String
     {
-        return this.id.toString()
+        return this.id
     }
 }
 

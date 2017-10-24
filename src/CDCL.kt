@@ -13,18 +13,18 @@ fun CdclTable.backtrackTo(untilLevel: Int): Unit {
     this.filter { it:CdclTableEntry -> it.level >= untilLevel}.forEach {it:CdclTableEntry -> it.affectedVariable.setTo(VariableSetting.Unset) }
     this.removeAll { allBelowLevel(it) }
 }
-fun CdclTable.print():Unit{
+fun CdclTable.print(){
     for (e: CdclTableEntry in this) {
         println(e.level.toString() + "\t"+e.affectedVariable.id + "\t "+e.value + "\t "+e.reason)
     }
 }
 typealias Resolvent = MutableMap<Variable,Boolean>
 fun makeResolvent():Resolvent = mutableMapOf()
-fun makeResolvent(c:Clause):Resolvent = mutableMapOf<Variable,Boolean>(pairs=*c.factors.toTypedArray())
-fun Resolvent.resolve(other: Clause, v: Variable): Unit {
+fun makeResolvent(c:Clause):Resolvent = mutableMapOf<Variable,Boolean>(pairs=*c.literals)
+fun Resolvent.resolve(other: Clause, v: Variable) {
     this.resolve(makeResolvent(other),v)
 }
-fun Resolvent.resolve(other: Resolvent,v:Variable): Unit {
+fun Resolvent.resolve(other: Resolvent,v:Variable) {
     this.remove(v)
     if(other != null)
         this.putAll(other.filter { it.key != v })
@@ -37,9 +37,9 @@ open class Reason private constructor ()
 {
     class InUnitClause(c:Clause):Reason()
     {
-        public val reasonClause:Clause = c
+        val reasonClause:Clause = c
     }
-    class Decision():Reason()
+    class Decision:Reason()
 }
 
 fun cdclSAT(clauseSet: ClauseSet): Boolean {
@@ -90,7 +90,7 @@ fun cdclSAT(clauseSet: ClauseSet): Boolean {
                     assert(false)
             }
             val resolventClause:Clause = Clause(decidedConflictingVars)
-            println(resolventClause)
+            println("Learning: "+resolventClause)
             clauseSet.addResolvent(resolventClause)
             level--
             table.backtrackTo(level)

@@ -1,10 +1,19 @@
+typealias Literal = Pair<Variable, Boolean>
+val Literal.variable:Variable
+        get() = this.first
+val Literal.predicate:Boolean
+        get() = this.second
+
+//TODO implement watched literals
+
 /**
  * A Clause is a disjunction of multiple variables with or without a negation predicate
  */
 class Clause constructor(disjunction : Array<Pair<Variable,Boolean>>)
 {
-    private var vars : Array<Variable> = disjunction.map { a -> a.first }.toTypedArray();
-    private var predicates: Array<Boolean> = disjunction.map{ a -> a.second}.toTypedArray();
+//    private var vars : Array<Variable> = disjunction.map { a -> a.first }.toTypedArray();
+//    private var predicates: Array<Boolean> = disjunction.map{ a -> a.second}.toTypedArray();
+    var literals : Array<Literal> = disjunction
 
     constructor (c: String,knownVariables:VariableSet) :
             this(c.filter { cv: Char ->  cv != ' '}. //remove whitespace
@@ -19,11 +28,11 @@ class Clause constructor(disjunction : Array<Pair<Variable,Boolean>>)
     constructor(cs:Map<Variable,Boolean>) :  this(cs.map { it -> Pair(it.key,it.value) }.toTypedArray())
 
     val isUnit : Boolean
-        get() =  ! this.isSatisfied && vars.count {v:Variable -> v.setting == VariableSetting.Unset  } == 1
+        get() =  ! this.isSatisfied && literals.count {l:Literal -> l.variable.setting == VariableSetting.Unset  } == 1
     val isEmpty : Boolean
-        get() = vars.zip(predicates, { a:Variable, b:Boolean -> a.isFalseWith(b)} ).all { wasFalse:Boolean -> wasFalse }
+        get() = literals.all {it.variable.isFalseWith(it.predicate)}
     val isSatisfied : Boolean
-        get() = vars.zip(predicates, { a:Variable, b:Boolean -> a.isTrueWith(b)}).any { a->a }
+        get() = this.literals.any{it.variable.isTrueWith(it.predicate)}
 
     val currentUnit: Pair<Variable,Boolean>? get() {
         if(! this.isUnit)
@@ -31,23 +40,19 @@ class Clause constructor(disjunction : Array<Pair<Variable,Boolean>>)
         else
         {
             //findOnly would be nice to remove one loop
-            val unitsIdx:Int? = this.vars.indexOfFirst { v -> v.setting == VariableSetting.Unset }
-            return when(unitsIdx){
-                null ->  null
-                else ->  Pair(vars[unitsIdx],predicates[unitsIdx])
-            }
+            return this.literals.first { it.variable.setting == VariableSetting.Unset}
         }
     }
 
     val freeVariable:Variable?
-        get() = this.vars.find { a:Variable -> a.setting == VariableSetting.Unset}
+        get() = this.literals.find { it.variable.setting == VariableSetting.Unset}?.variable
 
-    val factors = this.vars.zip(predicates)  //rename
+
 
     override fun toString():String
     {
-        return this.vars.zip(this.predicates).
-                map{it -> if(it.second){""}else{"!"}+it.first}.
+        return this.literals.
+                map{it -> if(it.predicate){""}else{"!"}+it.variable}.
                 joinToString(separator = "|")
     }
 }
