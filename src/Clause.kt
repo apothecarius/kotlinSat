@@ -4,37 +4,48 @@ val Literal.variable:Variable
 val Literal.predicate:Boolean
         get() = this.second
 
-//TODO implement watched literals
+fun Literal.becomesTrue():Boolean {
+    return this.variable.isTrueWith(this.predicate)
+}
+fun Literal.becomesFalse():Boolean{
+    return this.variable.isFalseWith(this.predicate)
+}
+val Literal.isUnset: Boolean get() =
+    this.variable.setting == VariableSetting.Unset
+
+
+fun codeToLiteralSet(c: String,knownVariables: VariableSet): Array<Literal> =
+    c.filter { cv: Char ->  cv != ' '}. //remove whitespace
+            split("|"). //split variables
+            map { v:String ->
+                if(v.startsWith("!")) //recognize negations
+                    Pair(knownVariables.storeOrGet(v.substring(1)),false)
+                else{
+                    Pair(knownVariables.storeOrGet(v),true)
+                }
+            }.toTypedArray()
 
 /**
  * A Clause is a disjunction of multiple variables with or without a negation predicate
  */
-class Clause constructor(disjunction : Array<Pair<Variable,Boolean>>)
+open class Clause constructor(disjunction : Array<Literal>)
 {
 //    private var vars : Array<Variable> = disjunction.map { a -> a.first }.toTypedArray();
 //    private var predicates: Array<Boolean> = disjunction.map{ a -> a.second}.toTypedArray();
     var literals : Array<Literal> = disjunction
 
-    constructor (c: String,knownVariables:VariableSet) :
-            this(c.filter { cv: Char ->  cv != ' '}. //remove whitespace
-                    split("|"). //split variables
-                    map { v:String ->
-                        if(v.startsWith("!")) //recognize negations
-                            Pair(knownVariables.storeOrGet(v.substring(1)),false)
-                        else{
-                            Pair(knownVariables.storeOrGet(v),true)
-                        }
-                    }.toTypedArray())
-    constructor(cs:Map<Variable,Boolean>) :  this(cs.map { it -> Pair(it.key,it.value) }.toTypedArray())
+    constructor (c: String,knownVariables:VariableSet):this(codeToLiteralSet(c,knownVariables))
+    constructor(cs:Map<Variable,Boolean>) : this(
+            cs.map { it -> Pair(it.key,it.value) }.toTypedArray())
 
-    val isUnit : Boolean
+    open val isUnit : Boolean
         get() =  ! this.isSatisfied && literals.count {l:Literal -> l.variable.setting == VariableSetting.Unset  } == 1
-    val isEmpty : Boolean
-        get() = literals.all {it.variable.isFalseWith(it.predicate)}
-    val isSatisfied : Boolean
-        get() = this.literals.any{it.variable.isTrueWith(it.predicate)}
+    open val isEmpty : Boolean
+        get() = literals.all {it.becomesFalse()}
+    open val isSatisfied : Boolean
+        get() = this.literals.any{it.becomesTrue()}
 
-    val currentUnit: Pair<Variable,Boolean>? get() {
+    open val currentUnit: Pair<Variable,Boolean>? get() {
         if(! this.isUnit)
             return null
         else

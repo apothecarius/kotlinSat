@@ -6,6 +6,7 @@
       <root url="jar://$KOTLIN_BUNDLED$/lib/kotlin-test.jar!/" />
       <root url="jar://$KOTLIN_BUNDLED$/lib/kotlin-stdlib-jre7.jar!/" />
       <root url="jar://$KOTLIN_BUNDLED$/lib/kotlin-stdlib-jre8.jar!/" />
+      <root url="jar://$KOTLIN_BUNDLED$/lib/kotlin-test-junit.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>

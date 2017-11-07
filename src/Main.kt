@@ -1,42 +1,22 @@
 import java.util.*
 
+val verbose:Boolean = true
+
 fun main(args : Array<String>)
 {
+    //clauseTest()
     //interesting testcase with 3 conflicts
-    // D|!G|!J|!L&D|!I|J&C|E|F|!J|!K|M&F|I&!E|!F|!J&B|E|!F|!I&!C|H|!I|J|!K&E|F|!K|L&D|G|!J&C|F|J&F|!I&C|G|J|K|!L&!E|!H|!I|!K&F|!J&D|!G|L&!F|G|L&!F|!G|L&!F|!J&!D|!F|!G|!K&!F|!G|K
-
-    testSolvers(5,12,20,5)
-    return
-
-    var a = Variable(c="a")
-    var b = Variable(c="b")
-    var c = Variable(c="c")
-
-    var klausContent:Array<Pair<Variable,Boolean>> = arrayOf(Pair(a,true),Pair(c,true))
-    val klaus:Clause = Clause(klausContent)
-
-    klausContent = arrayOf(Pair(a,false),Pair(b,false))
-    val klara:Clause = Clause(klausContent)
-    var res1:Resolvent = makeResolvent(klara)
-    var res2:Resolvent = makeResolvent(klaus)
-
-    klausContent = arrayOf(Pair(a,false),Pair(b,true))
-    val kolette:Clause = Clause(klausContent)
-
-    val klosett = ClauseSet(arrayOf(klaus,klara,kolette))
-
-
-
-    val wasserklo = ClauseSet("!a|b & !a|!b")
-
-    cdclSAT(wasserklo)
-    println()
-    wasserklo.printVarSettings()
-    wasserklo.printClauses()
+    //val klaus = ClauseSet(" !aX|bX & bX|aX & !bX|aX & !bX|!aX & D|!G|!J|!L&D|!I|J&C|E|F|!J|!K|M&F|I&!E|!F|!J&B|E|!F|!I&!C|H|!I|J|!K&E|F|!K|L&D|G|!J&C|F|J&F|!I&C|G|J|K|!L&!E|!H|!I|!K&F|!J&D|!G|L&!F|G|L&!F|!G|L&!F|!J&!D|!F|!G|!K&!F|!G|K")
+    testSolvers(50, 4, 7, 2)
+    val unklaus = ClauseSetWatchedLiterals("!C|!D|!E & !C|!E & B|!D|!E & C|E & !C|D & C|D & B|C|!E") //&C works
+    cdclSAT(unklaus)
+    //cdclSAT(unklaus)
+    //cdclSAT(klaus)
 }
 
 /**
  * create random clausesets and compare the result of DPLL and CDCL solvers
+ *
  */
 fun testSolvers(numTests:Int,numVars:Int,numClauses:Int,varStep:Int): Boolean {
     assert(numVars < 26)
@@ -70,20 +50,26 @@ fun testSolvers(numTests:Int,numVars:Int,numClauses:Int,varStep:Int): Boolean {
             if(!varList.isEmpty())
                 clauseList.add(varList.joinToString(separator="|"))
         }
-        var boolCode:String = clauseList.joinToString(separator = "&")
-        println(boolCode)
-
+        var boolCode:String = clauseList.joinToString(separator = " & ")
+        if (verbose) {
+            println(boolCode)
+        }
 
         val curClauseSetDpll = ClauseSet(boolCode)
-        val curClauseSetCdcl = ClauseSet(boolCode)
-        val dpllResult:Boolean = curClauseSetDpll.dpllSAT()
+        val curClauseSetCdcl = ClauseSet(boolCode)//ClauseSetWatchedLiterals(boolCode)
+        val watchedLiteralClauseSet = ClauseSetWatchedLiterals(boolCode)
+        val dpllResult:Boolean = dpllSAT(curClauseSetDpll)
         val cdclResult:Boolean = cdclSAT(curClauseSetCdcl)
+        val watchedLiteralResult:Boolean = cdclSAT(watchedLiteralClauseSet)
 
-        if (dpllResult != cdclResult) {
+        if (dpllResult != cdclResult || dpllResult != watchedLiteralResult) {
             println("ERROR: "+ boolCode)
             return false
         }
+        println()
+        println()
 
     }
+    println("CDCL and DPLL Solvers work equally")
     return true
 }

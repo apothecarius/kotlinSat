@@ -1,37 +1,68 @@
 
-data class CdclTableEntry(val level:Int,val affectedVariable:Variable, val value:Boolean, val reason:Reason)
+data class CdclTableEntry(
+        val level:Int,
+        val affectedVariable:Variable,
+        val value:Boolean,
+        val reason:Reason)
 
 typealias CdclTable = MutableList<CdclTableEntry>
 fun CdclTable.findReason(forVar: Variable):Reason? =
         this.find { it:CdclTableEntry -> it.affectedVariable == forVar }?.reason
 
 /**
- *
+ * Removes all entries with or below the given level and
+ * returns a list of all variables that were unset
  */
-fun CdclTable.backtrackTo(untilLevel: Int): Unit {
-    fun allBelowLevel(entry:CdclTableEntry):Boolean = entry.level >= untilLevel
-    this.filter { it:CdclTableEntry -> it.level >= untilLevel}.forEach {it:CdclTableEntry -> it.affectedVariable.setTo(VariableSetting.Unset) }
+fun CdclTable.backtrackTo(untilLevel: Int): List<Variable> {
+    var retu:MutableList<Variable> = mutableListOf()
+    fun allBelowLevel(entry:CdclTableEntry):Boolean = entry.level > untilLevel
+    this.filter { it:CdclTableEntry -> allBelowLevel(it)}.map {
+        it -> it.affectedVariable }.forEach {
+        it:Variable -> it.setTo(VariableSetting.Unset);retu.add(it)}
+
     this.removeAll { allBelowLevel(it) }
+    return retu
 }
+
+
 fun CdclTable.print(){
     for (e: CdclTableEntry in this) {
-        println(e.level.toString() + "\t"+e.affectedVariable.id + "\t "+e.value + "\t "+e.reason)
+        println(e.level.toString() + "\t"+e.affectedVariable.id +
+                "\t "+e.value + "\t "+e.reason)
     }
 }
+
+/**
+ * A resolvent is a Clause based on a conflict in the CDCL algorithm which is
+ * added to the clauseset to eventually directly find a solution
+ *
+ * Resolvents lead to knowledge about the given formula by finding decided
+ * variablesettings that lead to the conflict.
+ */
 typealias Resolvent = MutableMap<Variable,Boolean>
 fun makeResolvent():Resolvent = mutableMapOf()
 fun makeResolvent(c:Clause):Resolvent = mutableMapOf<Variable,Boolean>(pairs=*c.literals)
 fun Resolvent.resolve(other: Clause, v: Variable) {
     this.resolve(makeResolvent(other),v)
 }
+/**
+ * integrates the given resolvent, which is the reason for the given variable
+ * into this resolvent
+ */
 fun Resolvent.resolve(other: Resolvent,v:Variable) {
     this.remove(v)
     if(other != null)
         this.putAll(other.filter { it.key != v })
 }
+/**
+ * returns any key in the resolvent, or null, if the resolvent is empty
+ */
+fun Resolvent.getAnyVariable(): Variable? =
+        when (this.isEmpty()) {
+            true -> null
+            false -> this.keys.first()
+        }
 
-
-//typealias Resolvent = MutableMap<Variable,Boolean>
 
 open class Reason private constructor ()
 {
@@ -42,20 +73,42 @@ open class Reason private constructor ()
     class Decision:Reason()
 }
 
+
 fun cdclSAT(clauseSet: ClauseSet): Boolean {
     var level:Int = 0
     val table : CdclTable = mutableListOf<CdclTableEntry>()
 
     while (true) {
-        table.addAll(clauseSet.getAndSetUnitsWithReason().map {
-            unit ->  CdclTableEntry(
-                level,
-                unit.first.first,
-                unit.first.second,
-                Reason.InUnitClause(unit.second))})
+        val units = clauseSet.getAndSetUnitsWithReason()
+
+        if (!units.isEmpty()) {
+            table.addAll(units.map {
+                unit ->  CdclTableEntry(
+                    level,
+                    unit.first.first,
+                    unit.first.second,
+                    Reason.InUnitClause(unit.second))})
+            if (clauseSet is ClauseSetWatchedLiterals) {
+                units.map { it -> it.first.variable }.forEach{
+                    clauseSet.updateWatchedLiterals(it)}
+            }
+            continue
+        }
+
         if(clauseSet.isEmpty){
+            if (clauseSet is ClauseSetWatchedLiterals) {
+                clauseSet.resetAllWatchedLiterals()
+            }
+            assert( !clauseSet.isFulfilled )
             if (level == 0) {
+                println(clauseSet.getEmptyClause())
+                println("UNSAT")
+                table.print()
                 return false //unresolvable conflict -> UNSAT
+            }
+
+            if (verbose) {
+                println("doing backtrack")
             }
             //the empty clause that is being evaluated, to learn a new clause
             val emptyClause:Clause = clauseSet.getEmptyClause()!!
@@ -70,33 +123,37 @@ fun cdclSAT(clauseSet: ClauseSet): Boolean {
                 decidedConflictingVars.putAll(curDecidedVars)
                 for (dec in curDecidedVars) resolvent.remove(dec.key) // no removeAll ?
 
-                if (resolvent.isEmpty()) { // kann weg
-                    break
-                }
-
-                //get any variable from resolvent // TODO check if there is ANY other way
-                var unitVar:Variable? = null
-                for (v in resolvent) {
-                    unitVar = v.key
-                    break
-                }
-                if(unitVar == null)
-                    break
+                //get any variable from resolvent. If its empty the loop can be
+                //ended
+                var unitVar:Variable = resolvent.getAnyVariable() ?: break //"elvis operator"
                 val reason:Reason = (table.findReason(unitVar)!!)
                 assert( reason is Reason.InUnitClause)
                 if(reason is Reason.InUnitClause)
                     resolvent.resolve(reason.reasonClause,unitVar)
-                else
-                    assert(false)
             }
-            val resolventClause:Clause = Clause(decidedConflictingVars)
-            println("Learning: "+resolventClause)
+            assert(decidedConflictingVars.isNotEmpty())
+            val resolventClause:Clause =
+                    when (clauseSet) {
+                        is ClauseSetWatchedLiterals -> ClauseWatchedLiterals(decidedConflictingVars)
+                        is ClauseSet -> Clause(decidedConflictingVars)
+                        else -> null //syntactically necessary
+                    }!!
+            if (verbose) {
+                println("Learning: "+resolventClause)
+            }
             clauseSet.addResolvent(resolventClause)
             level--
-            table.backtrackTo(level)
+            val affectedVariables = table.backtrackTo(level)
+            //explicitely unset variables, this will also reset watched literals
+            clauseSet.resetVars(affectedVariables)
+
         }
         else if (clauseSet.isFulfilled) {
-            table.print()
+
+            if (verbose) {
+                println("SAT")
+                table.print()
+            }
             return true //found solution -> SAT
         }
         else {
@@ -105,10 +162,16 @@ fun cdclSAT(clauseSet: ClauseSet): Boolean {
             //getAnyFreeVariable mustnt be null, since if all variables
             //where set, the clauseSet would be SAT OR UNSAT
             val explicitelySetVar:Variable = clauseSet.getAnyFreeVariable()!!
-            explicitelySetVar.setTo(VariableSetting.True)
+            explicitelySetVar.setTo(decisionVariableSetting)
+            if (clauseSet is ClauseSetWatchedLiterals) {
+                clauseSet.updateWatchedLiterals(explicitelySetVar)
+            }
             table.add(CdclTableEntry(level,explicitelySetVar,explicitelySetVar.boolSetting!!,Reason.Decision()))
+            if (clauseSet is ClauseSetWatchedLiterals) {
+                clauseSet.resetAllWatchedLiterals()
+            }
         }
     }
-
-
 }
+
+val decisionVariableSetting:VariableSetting = VariableSetting.False
