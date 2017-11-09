@@ -101,9 +101,11 @@ fun cdclSAT(clauseSet: ClauseSet): Boolean {
             }
             assert( !clauseSet.isFulfilled )
             if (level == 0) {
-                println(clauseSet.getEmptyClause())
-                println("UNSAT")
-                table.print()
+                if (!verbose) {
+                    println(clauseSet.toString()+" error in "+
+                            clauseSet.getEmptyClause().toString()+" -> UNSAT")
+                    table.print()
+                }
                 return false //unresolvable conflict -> UNSAT
             }
 
@@ -119,7 +121,8 @@ fun cdclSAT(clauseSet: ClauseSet): Boolean {
             //a variablesSet which is learned at the end
             var decidedConflictingVars:Resolvent = makeResolvent()//takes the decided variables out of the resolvent
             while (!resolvent.isEmpty()) {
-                val curDecidedVars:Map<Variable,Boolean> = resolvent.filter{table.findReason(it.key) is Reason.Decision}
+                val curDecidedVars:Map<Variable,Boolean> = resolvent.filter{
+                    table.findReason(it.key) is Reason.Decision}
                 decidedConflictingVars.putAll(curDecidedVars)
                 for (dec in curDecidedVars) resolvent.remove(dec.key) // no removeAll ?
 
@@ -131,7 +134,13 @@ fun cdclSAT(clauseSet: ClauseSet): Boolean {
                 if(reason is Reason.InUnitClause)
                     resolvent.resolve(reason.reasonClause,unitVar)
             }
-            assert(decidedConflictingVars.isNotEmpty())
+            if (decidedConflictingVars.isEmpty()) {
+                //conflict has no decided reason, so tautologically unsatisfiable
+                if (verbose) {
+                    println("Found an unresolvable conflict -> UNSAT")
+                }
+                return false
+            }
             val resolventClause:Clause =
                     when (clauseSet) {
                         is ClauseSetWatchedLiterals -> ClauseWatchedLiterals(decidedConflictingVars)
