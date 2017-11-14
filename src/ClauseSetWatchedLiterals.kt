@@ -1,3 +1,5 @@
+import kotlin.coroutines.experimental.buildSequence
+
 /**
  * This class extends ordinary clauses to have watched literals, which
  * dramatically improves performance of unit propagation
@@ -47,6 +49,12 @@ class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.ma
         for (l: Variable in c.literals.map { it ->it.variable }) {
             //the entry must exist, because the variable is known
             this.occurences[l]!!.add(c)
+        }
+    }
+
+    override fun getPresentVariables(): Sequence<Variable> = buildSequence {
+        for (v: Variable in occurences.keys) {
+            yield(v)
         }
     }
 

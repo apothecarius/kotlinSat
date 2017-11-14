@@ -13,6 +13,13 @@ class Variable constructor(c: VariableIdentifier)
     {
         this.setting = s
     }
+
+    fun setTo(s: Boolean) {
+        this.setting = when (s) {
+            true -> VariableSetting.True
+            false -> VariableSetting.False
+        }
+    }
     val boolSetting :Boolean? get() =
         when(this.setting)
         {
@@ -37,7 +44,8 @@ class Variable constructor(c: VariableIdentifier)
             VariableSetting.True -> ! predicate
             VariableSetting.False -> predicate
         }
-
+    val isUnset:Boolean
+        get() = this.setting == VariableSetting.Unset
 
     override fun toString():String
     {

@@ -90,7 +90,7 @@ fun cdclSAT(clauseSet: ClauseSet): Boolean {
                     Reason.InUnitClause(unit.second))})
             if (clauseSet is ClauseSetWatchedLiterals) {
                 units.map { it -> it.first.variable }.forEach{
-                    clauseSet.updateWatchedLiterals(it)}
+                    clauseSet.updateWatchedLiterals(v=it)}
             }
             continue
         }
@@ -101,7 +101,7 @@ fun cdclSAT(clauseSet: ClauseSet): Boolean {
             }
             assert( !clauseSet.isFulfilled )
             if (level == 0) {
-                if (!verbose) {
+                if (verbose) {
                     println(clauseSet.toString()+" error in "+
                             clauseSet.getEmptyClause().toString()+" -> UNSAT")
                     table.print()

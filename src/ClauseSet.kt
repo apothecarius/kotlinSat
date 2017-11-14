@@ -1,3 +1,4 @@
+import kotlin.coroutines.experimental.buildSequence
 
 /**
  * A clauseset is the conjunction of multiple clauses
@@ -5,9 +6,15 @@
  */
 open class ClauseSet(c:Array<Clause>)
 {
-    protected var clauses : MutableList<Clause> = c.toMutableList()
+    protected val clauses : MutableList<Clause> = c.toMutableList()
 
-
+    /**
+     * A ClauseSet can be instantiated by passing a string containing a formula
+     * a|b & c|d
+     * The pipes (meaning an OR relation) bind stronger than the ampersand
+     * (meaning a AND relation), whitespace can be added freely, brackets are
+     * not supported
+     */
     constructor(cs:String):this(cs,VariableSet()) //integrate the below into this constructor
     protected constructor(cs:String,vs:VariableSet)  :
             this(cs.split(delimiters="&").
@@ -23,6 +30,21 @@ open class ClauseSet(c:Array<Clause>)
     {
         this.clauses.add(c)
     }
+
+    open fun getPresentVariables(): Sequence<Variable> = buildSequence {
+        //the variables that were already returned
+        val metVars:MutableSet<Variable> = mutableSetOf()
+        for (c: Clause in clauses) {
+            for(v:Variable in c.literals.map { it -> it.first })
+                if (metVars.contains(v)) {
+                    continue
+                } else {
+                    metVars.add(v)
+                    yield(v)
+                }
+        }
+    }
+
 
     /**
      * returns all variables that were set
