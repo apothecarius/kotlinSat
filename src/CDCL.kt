@@ -95,6 +95,7 @@ fun cdclSAT(clauseSet: ClauseSet): Boolean {
             continue
         }
 
+
         if(clauseSet.isEmpty){
             if (clauseSet is ClauseSetWatchedLiterals) {
                 clauseSet.resetAllWatchedLiterals()
@@ -129,7 +130,7 @@ fun cdclSAT(clauseSet: ClauseSet): Boolean {
                 //get any variable from resolvent. If its empty the loop can be
                 //ended
                 var unitVar:Variable = resolvent.getAnyVariable() ?: break //"elvis operator"
-                val reason:Reason = (table.findReason(unitVar)!!)
+                val reason:Reason = table.findReason(unitVar)!!
                 assert( reason is Reason.InUnitClause)
                 if(reason is Reason.InUnitClause)
                     resolvent.resolve(reason.reasonClause,unitVar)
@@ -176,7 +177,7 @@ fun cdclSAT(clauseSet: ClauseSet): Boolean {
                 clauseSet.updateWatchedLiterals(explicitelySetVar)
             }
             table.add(CdclTableEntry(level,explicitelySetVar,explicitelySetVar.boolSetting!!,Reason.Decision()))
-            if (clauseSet is ClauseSetWatchedLiterals) {
+            if (clauseSet is ClauseSetWatchedLiterals && activeWLIterationScheme == WatchedLiteralIterationScheme.ToMiddle) {
                 clauseSet.resetAllWatchedLiterals()
             }
         }

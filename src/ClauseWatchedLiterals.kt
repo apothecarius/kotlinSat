@@ -9,7 +9,25 @@ class ClauseWatchedLiterals constructor(disjunction : Array<Literal>):Clause(dis
     private val initialTail:Int = this.literals.size-1
 
     var watchedHead:Int = initialHead
+    set(value){
+        field = value
+        if (field >= this.literals.size) {
+            field = field % this.literals.size
+        }
+        while (field < 0) { //modulo doesnt work correctly in java/kotlin
+            field += this.literals.size
+        }
+    }
     var watchedTail:Int = initialTail
+    set(value){
+        field = value
+        if (field >= this.literals.size) {
+            field = field % this.literals.size
+        }
+        while (field < 0) {
+            field += this.literals.size
+        }
+    }
 
     init{
 
@@ -24,42 +42,75 @@ class ClauseWatchedLiterals constructor(disjunction : Array<Literal>):Clause(dis
         this.watchedHead = initialHead
         this.watchedTail = initialTail
 
-        while (this.literals[watchedHead].becomesFalse() &&
-                this.watchedHead != this.watchedTail &&
-                this.watchedHead < this.literals.size) {
-            this.watchedHead++
-        }
-        while (this.literals[watchedTail].becomesFalse() &&
-                this.watchedHead != this.watchedTail &&
-                this.watchedHead >= 0) {
-            this.watchedTail--
-        }
-
+        this.updateWatchedLiterals(this.literals[this.watchedHead].variable)
+        this.updateWatchedLiterals(this.literals[this.watchedTail].variable)
     }
+
 
     fun updateWatchedLiterals(v: Variable) {
         if (this.isUnit || this.isEmpty || this.isSatisfied) {
             //dont change an established state
             return
+        } else if (v.isUnset) {
+            //dont need to move away from an unset variable
+            return
         }
-        var movingHead:Boolean = when (v) {
+
+        val isMovingHead: Boolean = when (v) {
             this.literals[watchedHead].variable -> true
             this.literals[watchedTail].variable -> false
             else -> return
         }
 
-        do {
-            when (movingHead) {
-                true -> this.watchedHead++
-                false -> this.watchedTail--
+        //would be nice to have this as dynamic variable
+        fun getMovingLiteral() = this.literals[when (isMovingHead) {
+            true -> watchedHead
+            false ->watchedTail
+        }]
+
+
+
+        val initialWanderingLiteral = getMovingLiteral()
+
+
+        fun mustKeepMovingWatchedLiteral(wanderingWatched: Literal): Boolean {
+            return when (activeWLIterationScheme) {
+                WatchedLiteralIterationScheme.ToMiddle ->
+                    this.watchedHead != this.watchedTail &&
+                    !wanderingWatched.isUnset &&
+                    !this.isSatisfied
+                WatchedLiteralIterationScheme.SideBySide ->
+                    !wanderingWatched.becomesTrue() &&
+                    wanderingWatched != initialWanderingLiteral &&
+                    ! (wanderingWatched.isUnset && this.watchedHead != this.watchedTail)
             }
-            var wanderingWatched:Literal = this.literals[when (movingHead) {
-                true -> watchedHead
-                false -> watchedTail
-            }]
-        } while (this.watchedHead != this.watchedTail &&
-                ! wanderingWatched.isUnset &&
-                ! this.isSatisfied)
+        }
+
+        fun moveActiveWatchedLiteral() = when (isMovingHead) {
+            true -> this.watchedHead++
+            false -> when (activeWLIterationScheme) {
+                WatchedLiteralIterationScheme.ToMiddle -> this.watchedTail--
+                WatchedLiteralIterationScheme.SideBySide -> this.watchedTail++
+            }
+        }
+
+        do {
+            moveActiveWatchedLiteral()
+        } while (mustKeepMovingWatchedLiteral(getMovingLiteral()))
+
+        //if a full rotation happened a unit case is recognized when both
+        //watched literals are at the same position
+        if (activeWLIterationScheme == WatchedLiteralIterationScheme.SideBySide) {
+            if(initialWanderingLiteral == getMovingLiteral())
+            {
+                if (isMovingHead) {
+                    this.watchedHead = this.watchedTail
+                } else {
+                    this.watchedTail = this.watchedHead
+                }
+            }
+        }
+
     }
 
 
