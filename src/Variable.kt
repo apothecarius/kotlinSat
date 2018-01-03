@@ -20,6 +20,10 @@ class Variable constructor(c: VariableIdentifier)
             false -> VariableSetting.False
         }
     }
+
+    fun unset() {
+        this.setting = VariableSetting.Unset
+    }
     val boolSetting :Boolean? get() =
         when(this.setting)
         {
@@ -50,6 +54,13 @@ class Variable constructor(c: VariableIdentifier)
     override fun toString():String
     {
         return this.id
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (other is Variable) {
+            return this.id.equals(other.id) && this.setting.equals(other.setting)
+        } else
+        return super.equals(other)
     }
 }
 

@@ -18,7 +18,10 @@ class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.ma
             this(cs.split(delimiters="&").
                     map { c:String -> ClauseWatchedLiterals(c,vs) }.toTypedArray())
 
+    private val clausesWL:List<ClauseWatchedLiterals>
+        get() = this.clauses as List<ClauseWatchedLiterals>
 
+    //TODO occurences pro Literal anstatt Variable
     /**
      * stores for every variable the occurences in clauses
      * the map itself is not mutable, because no new variables can pop up,
@@ -26,8 +29,12 @@ class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.ma
      */
     private var occurences : Map<Variable,MutableSet<ClauseWatchedLiterals>>
     init {
+        occurences = this.setupOccurences()
+    }
+
+    private fun setupOccurences():Map<Variable,MutableSet<ClauseWatchedLiterals>> {
         var mutableOccurences:MutableMap<Variable,MutableSet<ClauseWatchedLiterals>> = mutableMapOf()
-        for (c: ClauseWatchedLiterals in this.clauses.map { it -> it as ClauseWatchedLiterals }) {
+        for (c: ClauseWatchedLiterals in this.clausesWL) {
             for (v: Variable in c.literals.map { it.variable }) {
                 var occurenceSet: MutableSet<ClauseWatchedLiterals>? = mutableOccurences.get(v)
                 if (occurenceSet == null) {
@@ -40,7 +47,24 @@ class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.ma
             }
         }
 
-        occurences = mutableOccurences.toMap()
+        return mutableOccurences.toMap()
+    }
+
+    fun getLiteralOccurences(): Map<Literal, Set<ClauseWatchedLiterals>> {
+        var retu = mutableMapOf<Literal, Set<ClauseWatchedLiterals>>()
+        for (clausesWithVar in this.occurences) {
+            for (prefix in arrayOf(true, false)) {
+                val occurencesWithPrefix = clausesWithVar.value.filter {it ->
+                    it.literals.filter {
+                        it.predicate == prefix && it.variable ==  clausesWithVar.key}.isNotEmpty() }
+                if (occurencesWithPrefix.isNotEmpty()) {
+                    val literalKey:Literal = Pair(clausesWithVar.key,prefix)
+                    retu.put(literalKey,occurencesWithPrefix.toSet())
+                }
+            }
+
+        }
+        return retu
     }
 
     override fun addResolvent(c: Clause) {
@@ -57,6 +81,7 @@ class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.ma
             yield(v)
         }
     }
+
 
     override fun getAndSetUnitsWithReason(): List<Pair<Literal, Clause>> {
         var retu:MutableList<Pair<Literal, Clause>> = mutableListOf()
@@ -91,8 +116,34 @@ class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.ma
     }
 
     fun resetAllWatchedLiterals() {
-        for (klaus: Clause in this.clauses) {
-            (klaus as ClauseWatchedLiterals).resetWatchedLiterals()
+        for (klaus in this.clausesWL) {
+            klaus.resetWatchedLiterals()
         }
+    }
+
+    fun prepareWatchedLiteralsForImplicants() {
+        //set a flag that lets the watched literals rest on fulfilled literals only
+        ClauseWatchedLiterals.watchedLiteralsForUnitVariables = false
+        //move the literals to the startpositions
+        this.clausesWL.forEach { it.resetWatchedLiterals() }
+    }
+
+
+    fun getWatchedLiteralToClause():WatchedLiteralToClause {
+        assert(! ClauseWatchedLiterals.watchedLiteralsForUnitVariables)
+        var retu:WatchedLiteralToClause = WatchedLiteralToClause()
+
+        for (clause in this.clausesWL) {
+            for (lit: Literal in clause.getBothWatchedLiterals().toList().filterNotNull()) {
+                retu.put(lit,clause)
+            }
+        }
+        return retu
+    }
+
+    fun removeFalsyVariables() {
+        this.clauses.forEach { it.filterFalsyLiterals() }
+        this.setupOccurences()
+        this.resetAllWatchedLiterals()
     }
 }

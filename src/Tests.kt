@@ -15,28 +15,7 @@ fun testSolvers(numTests:Int,numVars:Int,numClauses:Int,varStep:Int): Boolean {
     }
 
     for (_iter:Int in 1..numTests) {
-        var clauseList:MutableList<String> = mutableListOf()
-        for (clauseIter: Int in 1..numClauses) {
-            var varList:MutableList<String> = mutableListOf()
-            var varsIter:Int = 0
-            while(true) {
-                varsIter += Math.abs(randy.nextInt() % varStep)+1
-                if (varsIter >= knownVars.size) {
-                    break
-                } else {
-                    var s:String
-                    if (randy.nextBoolean()) {
-                        s = "!"
-                    } else
-                        s = ""
-                    s += knownVars.get(varsIter)
-                    varList.add(s)
-                }
-            }
-            if(!varList.isEmpty())
-                clauseList.add(varList.joinToString(separator="|"))
-        }
-        var boolCode:String = clauseList.joinToString(separator = " & ")
+        var boolCode:String = makeBoolCode(randy,knownVars,numClauses, varStep)
         if (verbose) {
             println(boolCode)
         }
@@ -85,7 +64,66 @@ fun testSolvers(numTests:Int,numVars:Int,numClauses:Int,varStep:Int): Boolean {
 }
 
 
+fun makeBoolCode(randy: Random, knownVars:List<Char>,numClauses:Int,varStep:Int): String {
+    var clauseList:MutableList<String> = mutableListOf()
+    for (clauseIter: Int in 1..numClauses) {
+        var varList:MutableList<String> = mutableListOf()
+        var varsIter:Int = 0
+        while(true) {
+            varsIter += Math.abs(randy.nextInt() % varStep)+1
+            if (varsIter >= knownVars.size) {
+                break
+            } else {
+                var s:String
+                if (randy.nextBoolean()) {
+                    s = "!"
+                } else
+                    s = ""
+                s += knownVars.get(varsIter)
+                varList.add(s)
+            }
+        }
+        if(!varList.isEmpty())
+            clauseList.add(varList.joinToString(separator="|"))
+    }
+    return clauseList.joinToString(separator = " & ")
+}
+
+
 fun testImplicant() {
+    var numTests=10
+    var numVars=4
+    var numClauses=7
+    var varStep=2
+
+    val randy: Random = Random()
+
+    var knownVars = mutableListOf<Char>()
+    for (i: Int in 65..65 + numVars) {
+        knownVars.add(i.toChar())
+    }
+
+    for (_iter:Int in 1..numTests) {
+        var boolCode: String = makeBoolCode(randy, knownVars, numClauses, varStep)
+        var cs = ClauseSetWatchedLiterals(boolCode)
+
+        cdclSolve(cs)
+        if(!cs.isFulfilled){
+            //cant find implicant of unsolvable formula
+            continue
+        }
+        println(cs.toString() + " -> ")
+        println("Base:"+getPrimeImplicant(cs))
+
+        var csCopy = ClauseSetWatchedLiterals(boolCode)
+        val table = cdclSolve(csCopy)
+
+        println("WL:  "+getPrimeImplicantWithWatchedLiterals(csCopy,table))
+        println()
+    }
+}
+
+fun testImplicantOld() {
     run{
         val k = ClauseSet("a & b|c")
         val varA:Variable = k.getPresentVariables().find { it.id == "a" }!!
@@ -113,5 +151,4 @@ fun testImplicant() {
     }
 
     return
-
 }

@@ -94,10 +94,32 @@ open class ClauseSet(c:Array<Clause>)
         return this.clauses.find { c:Clause -> c.isEmpty }
     }
 
+    /**
+     * Sets any remaining variable to the passed parameter (defaulting to true)
+     * This function requires the boolean formula to be fulfilled already, or it
+     * will crash
+     */
+    fun fillModel(setting:Boolean = true) {
+        assert(this.isFulfilled)
+        while (true) {
+            var freeVar:Variable = this.getAnyFreeVariable() ?: break
+            freeVar.setTo(setting)
+        }
+    }
+
     open fun resetVars(vs : List<Variable>):Unit
     {
         for(uv:Variable in vs)
             uv.setTo(VariableSetting.Unset)
+    }
+    fun getVariableSetting():Set<Literal> =
+            this.getPresentVariables().filter{ ! it.isUnset}.
+                map { it -> Pair(it,it.boolSetting!!) }.toSet()
+
+    fun setTo(variableSettings: Set<Literal>) {
+        for (e in variableSettings) {
+            e.variable.setTo(e.predicate)
+        }
     }
 
     override fun toString():String

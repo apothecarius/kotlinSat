@@ -10,6 +10,20 @@ fun CdclTable.findReason(forVar: Variable):Reason? =
         this.find { it:CdclTableEntry -> it.affectedVariable == forVar }?.reason
 
 /**
+ * Returns all variables that were set without a decision (except those that
+ * were reverted due to conflicts).
+ * If multiple SAT solutions are possible then the returned variables
+ * have the same setting in all of those.
+ * Note that some tautological variablesettings might not be included, if it
+ * was guessed correctly initially
+ *
+ * Note that a set of variables might be returned independent of whether the clauseSet
+ * is actually satisfiable
+ */
+fun CdclTable.getUnitVariables():Set<Literal> =
+        this.filter { it.level == 0 }.map { it -> Pair(it.affectedVariable,it.value) }.toSet()
+
+/**
  * Removes all entries with or below the given level and
  * returns a list of all variables that were unset
  */
@@ -23,7 +37,6 @@ fun CdclTable.backtrackTo(untilLevel: Int): List<Variable> {
     this.removeAll { allBelowLevel(it) }
     return retu
 }
-
 
 fun CdclTable.print(){
     for (e: CdclTableEntry in this) {
@@ -73,8 +86,14 @@ open class Reason private constructor ()
     class Decision:Reason()
 }
 
+fun cdclSAT(clauseSet:ClauseSet):Boolean
+{
+    val table = cdclSolve(clauseSet)
 
-fun cdclSAT(clauseSet: ClauseSet): Boolean {
+    return clauseSet.isFulfilled
+}
+
+fun cdclSolve(clauseSet: ClauseSet): CdclTable {
     var level:Int = 0
     val table : CdclTable = mutableListOf<CdclTableEntry>()
 
@@ -107,7 +126,7 @@ fun cdclSAT(clauseSet: ClauseSet): Boolean {
                             clauseSet.getEmptyClause().toString()+" -> UNSAT")
                     table.print()
                 }
-                return false //unresolvable conflict -> UNSAT
+                return table //unresolvable conflict -> UNSAT
             }
 
             if (verbose) {
@@ -140,7 +159,7 @@ fun cdclSAT(clauseSet: ClauseSet): Boolean {
                 if (verbose) {
                     println("Found an unresolvable conflict -> UNSAT")
                 }
-                return false
+                return table
             }
             val resolventClause:Clause =
                     when (clauseSet) {
@@ -164,7 +183,7 @@ fun cdclSAT(clauseSet: ClauseSet): Boolean {
                 println("SAT")
                 table.print()
             }
-            return true //found solution -> SAT
+            return table //found solution -> SAT
         }
         else {
             level++

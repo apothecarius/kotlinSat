@@ -66,4 +66,8 @@ open class Clause constructor(disjunction : Array<Literal>)
                 map{it -> if(it.predicate){""}else{"!"}+it.variable}.
                 joinToString(separator = "|")
     }
+
+    open fun filterFalsyLiterals() {
+        this.literals = this.literals.filter { it.becomesTrue() }.toTypedArray()
+    }
 }
