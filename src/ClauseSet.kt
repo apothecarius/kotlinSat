@@ -134,13 +134,12 @@ open class ClauseSet(c:Array<Clause>)
                 if (alreadyPrintedVars.contains(v)) {
                     continue;
                 } else {
-                    println(v.id + " -> "+v.setting)
+                    print(v.id + "->"+v.setting+" , ")
                     alreadyPrintedVars.add(v)
                 }
-
-
             }
         }
+        println()
     }
 
     fun printClauses(): Unit {

@@ -84,6 +84,13 @@ open class Reason private constructor ()
         val reasonClause:Clause = c
     }
     class Decision:Reason()
+
+    override fun toString(): String =
+            when (this) {
+                is InUnitClause -> "InUnitClause ("+this.reasonClause.toString()+")"
+                is Decision -> "Decision"
+                else -> "fail"
+            }
 }
 
 fun cdclSAT(clauseSet:ClauseSet):Boolean

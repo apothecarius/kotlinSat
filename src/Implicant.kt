@@ -120,17 +120,37 @@ fun isPrimeImplicant(clauseSet: ClauseSet): Boolean =
 fun getPrimeImplicant(clauseSet: ClauseSet):Set<Literal> {
     assert(clauseSet.isFulfilled)
     val originalSetting:Set<Literal> = clauseSet.getVariableSetting()
-
-    while (!isPrimeImplicant(clauseSet)) {
-        val nonPrime:Variable = getNonPrimeImplicantVariable(clauseSet)!!
-        nonPrime.unset()
+    if (clauseSet is ClauseSetWatchedLiterals) {
+        ClauseWatchedLiterals.watchedLiteralsForUnitVariables = false
+        clauseSet.resetAllWatchedLiterals()
     }
+
+
+
+    do{
+        val nonPrime:Variable = getNonPrimeImplicantVariable(clauseSet)?:break
+        nonPrime.unset()
+        if(clauseSet is ClauseSetWatchedLiterals){
+            clauseSet.updateWatchedLiterals(nonPrime)
+        }
+    }while(true)
+
     val retu = clauseSet.getVariableSetting()
     clauseSet.setTo(originalSetting)
+    if (clauseSet is ClauseSetWatchedLiterals) {
+        clauseSet.resetAllWatchedLiterals()
+    }
+
+    if (clauseSet is ClauseSetWatchedLiterals) {
+        ClauseWatchedLiterals.watchedLiteralsForUnitVariables = true
+    }
+
 
     return retu
 }
 
+fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals) =
+        getPrimeImplicantWithWatchedLiterals(clauseSet,cdclSolve(clauseSet))
 fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
                                          table:CdclTable):Set<Literal> {
 
@@ -198,7 +218,6 @@ fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
     }
 
     //prepare the clauseset
-    clauseSet.fillModel()
     clauseSet.removeFalsyVariables()
     clauseSet.prepareWatchedLiteralsForImplicants()
 

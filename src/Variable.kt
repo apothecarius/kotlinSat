@@ -9,11 +9,20 @@ class Variable constructor(c: VariableIdentifier)
     }
     var setting : VariableSetting = VariableSetting.Unset
 
+    /**
+     * Sets the variables state (false,true,unset)
+     * Note that if you use watched Literals, then you need to update
+     * them in all clauseSets that use this variable
+     */
     fun setTo(s:VariableSetting)
     {
         this.setting = s
     }
-
+    /**
+     * Sets the variables state (false,true)
+     * Note that if you use watched Literals, then you need to update
+     * them in all clauseSets that use this variable
+     */
     fun setTo(s: Boolean) {
         this.setting = when (s) {
             true -> VariableSetting.True
@@ -21,6 +30,11 @@ class Variable constructor(c: VariableIdentifier)
         }
     }
 
+    /**
+     * Unsets the variable (away from true/false)
+     * Note that if you use watched Literals, then you need to update
+     * them in all clauseSets that use this variable
+     */
     fun unset() {
         this.setting = VariableSetting.Unset
     }
@@ -67,6 +81,16 @@ class Variable constructor(c: VariableIdentifier)
 class VariableSet
 {
     private val knownVariables:MutableMap<VariableIdentifier,Variable> = mutableMapOf()
+
+    constructor()
+
+    constructor(vs: VariableSet)
+    {
+        for (v:Variable in vs.knownVariables.values)
+        {
+            this.storeOrGet(v.id).setTo(v.setting)
+        }
+    }
 
     fun storeOrGet(id:VariableIdentifier):Variable
     {

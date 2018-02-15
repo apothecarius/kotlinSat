@@ -14,6 +14,14 @@ class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.ma
 
     constructor(cs: String) : this(cs, VariableSet())
 
+    constructor(toCopy: ClauseSetWatchedLiterals):this(toCopy.toString())
+    {
+        for (cvs: Literal in toCopy.getVariableSetting()) {
+            this.findVar(cvs.variable.id)!!.setTo(cvs.second)
+        }
+    }
+
+
     private constructor(cs:String,vs:VariableSet)  :
             this(cs.split(delimiters="&").
                     map { c:String -> ClauseWatchedLiterals(c,vs) }.toTypedArray())
@@ -125,7 +133,8 @@ class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.ma
         //set a flag that lets the watched literals rest on fulfilled literals only
         ClauseWatchedLiterals.watchedLiteralsForUnitVariables = false
         //move the literals to the startpositions
-        this.clausesWL.forEach { it.resetWatchedLiterals() }
+        this.resetAllWatchedLiterals()
+//        this.clausesWL.forEach { it.resetWatchedLiterals() }
     }
 
 
@@ -146,4 +155,21 @@ class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.ma
         this.setupOccurences()
         this.resetAllWatchedLiterals()
     }
+    private fun findVar(id: VariableIdentifier): Variable? {
+        return this.occurences.keys.find { it.id == id}
+    }
+
+    /**
+     * Compares two clauseSets for their variable settings, and returns
+     * true if equal
+     */
+    fun isSettingEqual(toCompare: ClauseSetWatchedLiterals): Boolean {
+        for (v: Variable in this.occurences.keys) {
+            val pendant:Variable = toCompare.findVar(v.id) ?: return false
+            if(pendant.setting != v.setting)
+                return false
+        }
+        return true
+    }
+
 }

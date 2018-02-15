@@ -25,7 +25,8 @@ fun testSolvers(numTests:Int,numVars:Int,numClauses:Int,varStep:Int): Boolean {
         val watchedLiteralClauseSet = ClauseSetWatchedLiterals(boolCode)
         val dpllResult:Boolean = dpllSAT(curClauseSetDpll)
         val cdclResult:Boolean = cdclSAT(curClauseSetCdcl)
-        val watchedLiteralResult:Boolean = cdclSAT(watchedLiteralClauseSet)
+        val watchedLiteralTable:CdclTable = cdclSolve(watchedLiteralClauseSet)
+        val watchedLiteralResult:Boolean = watchedLiteralClauseSet.isFulfilled
 
         if (dpllResult != cdclResult || dpllResult != watchedLiteralResult) {
             println("ERROR: "+ boolCode)
@@ -39,8 +40,31 @@ fun testSolvers(numTests:Int,numVars:Int,numClauses:Int,varStep:Int): Boolean {
                 println(boolCode)
                 return false
             }
-            //unset variables until formula is primeImplicant
-            var unnecessaryVariable:Variable? = getNonPrimeImplicantVariable(curClauseSetDpll)
+
+
+            //val cdclCopyTable:CdclTable = cdclSolve(watchedLiteralClauseSet)
+            val piNonWl = getPrimeImplicant(curClauseSetCdcl)
+            val piWithWl = getPrimeImplicantWithWatchedLiterals(watchedLiteralClauseSet,watchedLiteralTable)
+
+
+            val clWithPI = arrayOf(curClauseSetCdcl,watchedLiteralClauseSet)
+            //clear all variable settings
+            clWithPI.forEach { it.getPresentVariables().forEach { it.unset() }}
+            //apply variable setting to primeImplicant
+            arrayOf(piNonWl, piWithWl).forEach { it.forEach{lit:Literal -> lit.first.setTo(lit.second)} }
+            //verify, that result is indeed primeImplicant
+            if (clWithPI.any { getNonPrimeImplicantVariable(it) != null }) {
+                println("ERROR: Prematurely returned PrimeImplicant")
+                println(boolCode)
+                return false
+            }
+
+
+
+           // println(getPrimeImplicantWithWatchedLiterals(fehlerKlaus2))
+
+
+            /*var unnecessaryVariable:Variable? = getNonPrimeImplicantVariable(curClauseSetDpll)
             while (unnecessaryVariable != null) {
                 unnecessaryVariable.setTo(VariableSetting.Unset)
                 unnecessaryVariable = getNonPrimeImplicantVariable(curClauseSetDpll)
@@ -50,7 +74,7 @@ fun testSolvers(numTests:Int,numVars:Int,numClauses:Int,varStep:Int): Boolean {
                 println("ERROR: could not properly find primeImplicant")
                 println(boolCode)
                 return false
-            }
+            }*/
         }
 
         if (verbose) {
@@ -112,7 +136,7 @@ fun testImplicant() {
             //cant find implicant of unsolvable formula
             continue
         }
-        println(cs.toString() + " -> ")
+        println(cs.toString())
         println("Base:"+getPrimeImplicant(cs))
 
         var csCopy = ClauseSetWatchedLiterals(boolCode)
@@ -123,32 +147,110 @@ fun testImplicant() {
     }
 }
 
+
+fun ClauseSet.countSetVars():Int = this.getPresentVariables().count{ !it.isUnset }
+
+fun implicantTest1()
+{
+    //fehlerfall 1: mit WL hat ein unnötiges literal
+    val fehlerKlausCode = "!C|!E & !B|D & !B|D|!E & B|C|D & !B|!D & !C|!E & C|!D & C"
+    val fehlerKlaus1 = ClauseSetWatchedLiterals(fehlerKlausCode);
+    val fehlerKlaus2 = ClauseSetWatchedLiterals(fehlerKlausCode);
+    cdclSAT(fehlerKlaus1)
+    println(getPrimeImplicant(fehlerKlaus1))
+    println(getPrimeImplicantWithWatchedLiterals(fehlerKlaus2))
+
+    println(fehlerKlaus1.countSetVars())
+    println(fehlerKlaus2.countSetVars())
+}
+fun implicantTest2()
+{
+    val fehlerKlausCode = "E & B|E & B|!D & B|D|E & !D|E"
+    //fehler: solver setzt !B, aber !B existiert hier nicht, primplikantenalgo sollte trotzdem b unsetten
+    val fehlerKlaus1 = ClauseSetWatchedLiterals(fehlerKlausCode);
+    val fehlerKlaus2 = ClauseSetWatchedLiterals(fehlerKlausCode);
+    cdclSAT(fehlerKlaus1)
+
+    println(getPrimeImplicant(fehlerKlaus1))
+    println(getPrimeImplicantWithWatchedLiterals(fehlerKlaus2))
+
+    println(fehlerKlaus1.countSetVars())
+    println(fehlerKlaus2.countSetVars())
+}
+fun implicantTest3()
+{
+    val fehlerKlausCode = "B|!C|!D|E & C|!E & !C|!D|!E & !B|!C|E & !C|!E & !B|D|E & C|E & C"
+
+    val fehlerKlaus1 = ClauseSetWatchedLiterals(fehlerKlausCode);
+    val fehlerKlaus2 = ClauseSetWatchedLiterals(fehlerKlausCode);
+    val fehlerKlaus3 = ClauseSet(fehlerKlausCode)
+
+    cdclSAT(fehlerKlaus1)
+    fehlerKlaus1.printVarSettings()
+    println(getPrimeImplicant(fehlerKlaus1))
+    println()
+
+    val table = cdclSolve(fehlerKlaus2)
+    fehlerKlaus2.printVarSettings()
+    println(getPrimeImplicantWithWatchedLiterals(fehlerKlaus2,table))
+    println()
+
+    val table3 = cdclSolve(fehlerKlaus3)
+    fehlerKlaus3.printVarSettings()
+    println(getPrimeImplicant(fehlerKlaus3))
+}
+
+
+fun implicantTest4()
+{
+    val fehlerKlausCode = "C|!G & D|!F|I & !C|I & !F|G|K & G & D|!I & !E|!J|K & !D|!E|I|J & C|!G|H|I|K & B|D|!F|!I|!J & !B|H|I & C|!I|!J"
+    //val fehlerKlausCode = "!B|!D|!E & B|D & C|E & C|!E & !B|D & C|!D & !B|C|!E"
+
+    val fehlerKlaus1 = ClauseSetWatchedLiterals(fehlerKlausCode);
+    val fehlerKlaus2 = ClauseSetWatchedLiterals(fehlerKlausCode);
+    val fehlerKlaus3 = ClauseSet(fehlerKlausCode)
+
+    cdclSAT(fehlerKlaus1)
+    fehlerKlaus1.printVarSettings()
+    println(getPrimeImplicant(fehlerKlaus1))
+    println()
+
+    val table = cdclSolve(fehlerKlaus2)
+    fehlerKlaus2.printVarSettings()
+    println(getPrimeImplicantWithWatchedLiterals(fehlerKlaus2,table))
+    println()
+
+    val table3 = cdclSolve(fehlerKlaus3)
+    fehlerKlaus3.printVarSettings()
+    println(getPrimeImplicant(fehlerKlaus3))
+}
+
 fun testImplicantOld() {
-    run{
-        val k = ClauseSet("a & b|c")
-        val varA:Variable = k.getPresentVariables().find { it.id == "a" }!!
-        val varB:Variable =k.getPresentVariables().find { it.id == "b" }!!
-        val varC:Variable =k.getPresentVariables().find { it.id == "c" }!!
+run{
+    val k = ClauseSet("a & b|c")
+    val varA:Variable = k.getPresentVariables().find { it.id == "a" }!!
+    val varB:Variable =k.getPresentVariables().find { it.id == "b" }!!
+    val varC:Variable =k.getPresentVariables().find { it.id == "c" }!!
 
-        varA.setTo(VariableSetting.True)
-        assert(! k.isFulfilled)
-        assert(! k.isEmpty)
-        assert(! isImplicant(k))
-        assert(! isPrimeImplicant(k))
+    varA.setTo(VariableSetting.True)
+    assert(! k.isFulfilled)
+    assert(! k.isEmpty)
+    assert(! isImplicant(k))
+    assert(! isPrimeImplicant(k))
 
-        varB.setTo(true)
-        assert(k.isFulfilled)
-        assert(isImplicant(k))
-        assert( isPrimeImplicant(k))
+    varB.setTo(true)
+    assert(k.isFulfilled)
+    assert(isImplicant(k))
+    assert( isPrimeImplicant(k))
 
-        varC.setTo(true)
-        assert(isImplicant(k))
-        assert(!isPrimeImplicant(k))
+    varC.setTo(true)
+    assert(isImplicant(k))
+    assert(!isPrimeImplicant(k))
 
-        varC.setTo(false)
-        assert(isImplicant(k))
-        assert(! isPrimeImplicant(k))
-    }
+    varC.setTo(false)
+    assert(isImplicant(k))
+    assert(! isPrimeImplicant(k))
+}
 
-    return
+return
 }
