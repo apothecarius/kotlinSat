@@ -6,7 +6,7 @@ import kotlin.coroutines.experimental.buildSequence
  */
 open class ClauseSet(c:Array<Clause>)
 {
-    protected val clauses : MutableList<Clause> = c.toMutableList()
+    private val clauses : MutableList<Clause> = c.toMutableList()
 
     /**
      * A ClauseSet can be instantiated by passing a string containing a formula
@@ -20,11 +20,16 @@ open class ClauseSet(c:Array<Clause>)
             this(cs.split(delimiters="&").
                     map { c:String -> Clause(c,vs) }.toTypedArray())
 
+    constructor(cs:ClauseSet) : this(cs.clauses.map { it -> Clause(it) }.toTypedArray())
 
     val isFulfilled : Boolean
         get() = clauses.all { a:Clause -> a.isSatisfied }
     val isEmpty : Boolean
         get() = clauses.any { a -> a.isEmpty }
+
+    fun getClauses(): List<Clause> {
+        return this.clauses
+    }
 
     open fun addResolvent(c:Clause)
     {
@@ -43,6 +48,12 @@ open class ClauseSet(c:Array<Clause>)
                     yield(v)
                 }
         }
+    }
+
+    fun copyClauses(): MutableList<Clause> {
+        var retu = mutableListOf<Clause>()
+        retu.addAll(this.clauses)
+        return retu
     }
 
 
@@ -107,6 +118,9 @@ open class ClauseSet(c:Array<Clause>)
         }
     }
 
+    open fun resetVars(){
+        this.resetVars(this.getPresentVariables().toList())
+    }
     open fun resetVars(vs : List<Variable>):Unit
     {
         for(uv:Variable in vs)
@@ -146,6 +160,10 @@ open class ClauseSet(c:Array<Clause>)
         for (c: Clause in this.clauses) {
             println(c)
         }
+    }
+
+    fun findVariable(i: VariableIdentifier): Variable? {
+        return this.getPresentVariables().find { it.id == i }
     }
 
 

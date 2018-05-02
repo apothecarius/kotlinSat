@@ -144,6 +144,7 @@ fun testImplicant() {
 
         println("WL:  "+getPrimeImplicantWithWatchedLiterals(csCopy,table))
         println()
+        //TODO ausgabe sortieren und dann automatisch verlgeichen
     }
 }
 
@@ -223,6 +224,34 @@ fun implicantTest4()
     val table3 = cdclSolve(fehlerKlaus3)
     fehlerKlaus3.printVarSettings()
     println(getPrimeImplicant(fehlerKlaus3))
+}
+
+fun testBackbone():Boolean
+{
+    var success:Boolean = true
+    val fa = ClauseSetWatchedLiterals("a & a|b|c")
+    val bba = getBackboneKaiKue(fa)//has backbone of A
+    success = success && bba.size == 1 && bba.contains(Literal(fa.findVariable("a")!!,true))
+
+    val fb = ClauseSetWatchedLiterals("!a & a|b")
+    val bbb = getBackboneKaiKue(fb)// has backbone of !a,b
+    success = success && bbb.size == 2 && bbb.contains(Literal(fb.findVariable("a")!!,false)) &&
+            bbb.contains(Literal(fb.findVariable("b")!!,true))
+
+    val fc = ClauseSetWatchedLiterals("D|!G|!J & D|!I|J & F|!J|!K & F|I & !F|!J & B|!F|!I & F|!J & D|!G & !F|G & !F|!G & !F|!J & !D|!F|!G|!K & !F|!G|K")
+    val bbc = getBackboneKaiKue(fc)//has a backbone of [(D, true), (F, false), (I, true), (J, false)]
+    success = success && bbc.size == 4 && bbc.contains(Literal(fc.findVariable("D")!!,true)) &&
+            bbc.contains(Literal(fc.findVariable("F")!!,false)) &&
+            bbc.contains(Literal(fc.findVariable("I")!!,true)) &&
+            bbc.contains(Literal(fc.findVariable("J")!!,false))
+
+
+    println(if (success) {
+        "Test of backbone succeeded"
+    } else {
+        "Test of backbone failed"
+    })
+    return success
 }
 
 fun testImplicantOld() {

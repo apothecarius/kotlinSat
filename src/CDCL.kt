@@ -136,14 +136,16 @@ fun cdclSolve(clauseSet: ClauseSet): CdclTable {
                 return table //unresolvable conflict -> UNSAT
             }
 
-            if (verbose) {
-                println("doing backtrack")
-            }
+
             //the empty clause that is being evaluated, to learn a new clause
             val emptyClause:Clause = clauseSet.getEmptyClause()!!
             // a set of (variables+predicate) which is resolved with other reason clauses
             // prefixed variables which are set by decision are regularly extracted, until
             // resolvent is empty
+            if (verbose) {
+                println("Conflict in "+emptyClause+" , doing backtrack")
+                table.print()
+            }
             var resolvent:Resolvent = makeResolvent(emptyClause)
             //a variablesSet which is learned at the end
             var decidedConflictingVars:Resolvent = makeResolvent()//takes the decided variables out of the resolvent

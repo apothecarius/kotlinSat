@@ -13,21 +13,25 @@ import kotlin.coroutines.experimental.buildSequence
 class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.map { it as Clause }.toTypedArray()) {
 
     constructor(cs: String) : this(cs, VariableSet())
-
-    constructor(toCopy: ClauseSetWatchedLiterals):this(toCopy.toString())
+    //constructor(cs:ClauseSetWatchedLiterals) : this(cs.clausesWL.map { it -> ClauseWatchedLiterals(it) }.toTypedArray())
+    //constructor(cs:ClauseSetWatchedLiterals,vs:VariableSet) : this(cs.getClauses().map { it -> ClauseWatchedLiterals(it,vs) }.toTypedArray())
+    constructor(cs:ClauseSetWatchedLiterals,vs:VariableSet) : this(cs.clausesWL.map { it -> ClauseWatchedLiterals(it,vs) }.toTypedArray())
+    constructor(cs:ClauseSetWatchedLiterals,referVariables:Boolean) : this(cs,if(referVariables){
+                VariableSet(cs.getPresentVariables())}else{VariableSet()})
+/*    constructor(toCopy: ClauseSetWatchedLiterals):this(toCopy.toString())
     {
         for (cvs: Literal in toCopy.getVariableSetting()) {
             this.findVar(cvs.variable.id)!!.setTo(cvs.second)
         }
-    }
+    }*/
 
 
     private constructor(cs:String,vs:VariableSet)  :
-            this(cs.split(delimiters="&").
-                    map { c:String -> ClauseWatchedLiterals(c,vs) }.toTypedArray())
+    this(cs.split(delimiters="&").
+            map { c:String -> ClauseWatchedLiterals(c,vs) }.toTypedArray())
 
     private val clausesWL:List<ClauseWatchedLiterals>
-        get() = this.clauses as List<ClauseWatchedLiterals>
+    get() = this.getClauses() as List<ClauseWatchedLiterals>
 
     //TODO occurences pro Literal anstatt Variable
     /**
@@ -151,7 +155,7 @@ class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.ma
     }
 
     fun removeFalsyVariables() {
-        this.clauses.forEach { it.filterFalsyLiterals() }
+        this.getClauses().forEach { it.filterFalsyLiterals() }
         this.setupOccurences()
         this.resetAllWatchedLiterals()
     }
@@ -171,5 +175,5 @@ class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.ma
         }
         return true
     }
-
 }
+

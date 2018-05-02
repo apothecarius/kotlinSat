@@ -22,11 +22,11 @@ class WatchedLiteralToClause {
     }
 
     fun get(lit: Literal):Set<ClauseWatchedLiterals> {
-        var retu = this.map[lit]
-        if (retu != null) {
-            return retu
-        } else {
-            return emptySet()
+        var retu:Set<ClauseWatchedLiterals>? = this.map[lit]
+        
+        return when (retu) {
+            null -> emptySet()
+            else -> retu
         }
     }
 

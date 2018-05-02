@@ -3,6 +3,11 @@ enum class VariableSetting {True,False,Unset}
 
 class Variable constructor(c: VariableIdentifier)
 {
+    constructor(v: Variable) : this(v.id)
+    {
+        this.setTo(v.setting)
+    }
+
     var id :VariableIdentifier = c
     init{
         assert(id.isNotBlank())
@@ -90,6 +95,11 @@ class VariableSet
         {
             this.storeOrGet(v.id).setTo(v.setting)
         }
+    }
+
+    constructor(vs: Sequence<Variable>)
+    {
+        vs.forEach { this.knownVariables[it.id] = it}
     }
 
     fun storeOrGet(id:VariableIdentifier):Variable

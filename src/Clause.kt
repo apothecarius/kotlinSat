@@ -34,6 +34,9 @@ open class Clause constructor(disjunction : Array<Literal>)
 //    private var predicates: Array<Boolean> = disjunction.map{ a -> a.second}.toTypedArray();
     var literals : Array<Literal> = disjunction
 
+    constructor(c: Clause) : this(c.literals.map { it:Literal -> Literal(Variable(it.variable),it.predicate) }.toTypedArray())
+
+    constructor(l: Literal) : this(arrayOf<Literal>(l))
     constructor (c: String,knownVariables:VariableSet):this(codeToLiteralSet(c,knownVariables))
     constructor(cs:Map<Variable,Boolean>) : this(
             cs.map { it -> Pair(it.key,it.value) }.toTypedArray())

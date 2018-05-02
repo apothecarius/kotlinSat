@@ -2,6 +2,9 @@ class ClauseWatchedLiterals constructor(disjunction: Array<Literal>) : Clause(di
     constructor (c: String, knownVariables: VariableSet) :
             this(codeToLiteralSet(c, knownVariables))
 
+    constructor(c: ClauseWatchedLiterals,vs:VariableSet) : this(c.literals.map { it:Literal -> Literal(vs.storeOrGet(it.variable.id),it.predicate) }.toTypedArray())
+    //constructor(c: Clause) : this(c.literals.map { it:Literal -> Literal(Variable(it.variable),it.predicate) }.toTypedArray())
+    constructor(l:Literal) : this(arrayOf(l))
     constructor(cs: Map<Variable, Boolean>) : this(
             cs.map { it -> Pair(it.key, it.value) }.toTypedArray())
 
