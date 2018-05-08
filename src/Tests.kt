@@ -324,7 +324,7 @@ return
 
 
 fun timingTests(): Unit {
-    val cod = makeBoolCode(4000,5000,2100)
+    val cod = makeBoolCode(4000,5000,2900)
     var cs = ClauseSet(cod)
     var cswl = ClauseSetWatchedLiterals(cod)
     val start1 = System.currentTimeMillis()
@@ -334,12 +334,23 @@ fun timingTests(): Unit {
     val erg2 = cdclSolve(cswl)
     val end2 = System.currentTimeMillis()
 
+    val startSplit = System.currentTimeMillis()
+    val splitting = cs.separateClauses()
+    val endSplit = System.currentTimeMillis()
+    println(endSplit - startSplit)
+    println(splitting.size)
+    for (s in splitting) {
+        println(s)
+    }
+
+
     println(cod)
     println(end1 - start1)
     println(end2 - start2)
 
     println(cs.isFulfilled)
     println(cswl.isFulfilled)
+
 
 
     /*println(erg1.filter { it.reason is Reason.InUnitClause }.size)

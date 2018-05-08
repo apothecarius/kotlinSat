@@ -167,4 +167,43 @@ open class ClauseSet(c:Array<Clause>)
     }
 
 
+    /**
+     * returns a multiple independent lists of clauses, that share their variables
+     * For a fulfilling solution to this clauseSet, each of these lists of clauses
+     * could be evaluated independently
+     */
+    fun separateClauses():List<List<Clause>> {
+
+        var retu: MutableSet<FormulaGroup> = mutableSetOf()
+        for (c: Clause in this.getClauses()) {
+            var groups:List<FormulaGroup> = retu.filter {groupToCheck -> groupToCheck.first.any { //all groups where any variable
+                varToCheck -> c.literals.map { it.variable }.contains(varToCheck) }} //is contained in the variables of c
+
+            if (groups.isEmpty()) {
+                retu.add(FormulaGroup(c.literals.map { it.variable }.toMutableSet(), mutableListOf(c)))
+            } else{
+                //remove the found sets from retu, merge them and add that to retu
+                retu.removeAll(groups)
+
+                val occuringVars:Set<Variable> = groups.map { it.first }.fold(setOf<Variable>(),
+                        {acc: Set<Variable>, mutableSet: MutableSet<Variable> -> acc.union(mutableSet) }).
+                        union(c.literals.map { it.variable })
+
+                val associatedClauses: MutableSet<Clause> = groups.map { it.second.toSet() }.fold(setOf<Clause>(),
+                        {acc: Set<Clause>, mutableSet: Set<Clause> -> acc.union(mutableSet) }).toMutableSet()
+                associatedClauses.add(c)
+                retu.add(FormulaGroup(occuringVars.toMutableSet(), associatedClauses.toMutableList()))
+
+                //val toAdd:FormulaGroup = FormulaGroup(groups.map{it.first}.)
+
+
+
+            }
+
+
+        }
+
+        return retu.map { it -> it.second }
+    }
 }
+private typealias FormulaGroup = Pair<MutableSet<Variable>, MutableList<Clause>>

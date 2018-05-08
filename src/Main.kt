@@ -53,6 +53,9 @@ fun main(args : Array<String>)
     //println(klaus.isFulfilled)
     //cdclSAT(unklaus)
     //cdclSAT(klaus)
+
+
+
 /*
     //dont call the other tests if an error is found in the first run
     if(testSolvers(numTests=1000, numVars=4, numClauses=7, varStep=2))
@@ -60,12 +63,14 @@ fun main(args : Array<String>)
             testImplicant()
     */
     //testBackboneStocha()
-    
+
 
     /*val klaus = ClauseSetWatchedLiterals("!D & B|!D|!F & C|!E & !C|F & C|!F & !C|F & C|E|F")
     println(cdclSolve(klaus))
     println(getPrimeImplicant(klaus))
     println(getBackboneKaiKue(klaus))*/
+
+    timingTests()
 }
 
 
