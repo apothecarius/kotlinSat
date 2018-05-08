@@ -11,6 +11,13 @@ val activeWLIterationScheme:WatchedLiteralIterationScheme = WatchedLiteralIterat
 
 fun main(args : Array<String>)
 {
+    //interessante formeln für CDCL Zeilenverschieben
+    //println(getBackboneKaiKue(klaus)) NIX GRAD
+    //println()
+    //println(getBackboneKaiKue(klaus2))
+
+    //!B|!C|D|F & D|!F & B|!D & D|F & C|E & B|E & B|!C|F
+    //D wird gelernt, wird aber nicht auf level 0 evaluiert
     //implicantTest4()
     //val bb1 = ClauseSetWatchedLiterals("a & a|b|c")
     //val bb2 = ClauseSetWatchedLiterals("!a & a|b")
@@ -52,7 +59,13 @@ fun main(args : Array<String>)
         if (testSolvers(1000, 10, 12, 6))
             testImplicant()
     */
-    testBackbone()
+    //testBackboneStocha()
+    
+
+    /*val klaus = ClauseSetWatchedLiterals("!D & B|!D|!F & C|!E & !C|F & C|!F & !C|F & C|E|F")
+    println(cdclSolve(klaus))
+    println(getPrimeImplicant(klaus))
+    println(getBackboneKaiKue(klaus))*/
 }
 
 

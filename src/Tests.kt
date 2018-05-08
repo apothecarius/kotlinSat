@@ -1,4 +1,5 @@
 import java.util.*
+import java.util.stream.IntStream
 
 /**
  * create random clausesets and compare the result of DPLL and CDCL solvers
@@ -9,10 +10,7 @@ fun testSolvers(numTests:Int,numVars:Int,numClauses:Int,varStep:Int): Boolean {
 
     val randy: Random = Random()
 
-    var knownVars = mutableListOf<Char>()
-    for (i: Int in 65..65 + numVars) {
-        knownVars.add(i.toChar())
-    }
+    val knownVars:List<Char> = makeVarIds(numVars)
 
     for (_iter:Int in 1..numTests) {
         var boolCode:String = makeBoolCode(randy,knownVars,numClauses, varStep)
@@ -87,7 +85,17 @@ fun testSolvers(numTests:Int,numVars:Int,numClauses:Int,varStep:Int): Boolean {
     return true
 }
 
+fun makeVarIds(numVars: Int): List<Char> {
+    var retu = mutableListOf<Char>()
+    for (i: Int in 65..65 + numVars) {
+        retu.add(i.toChar())
+    }
+    return retu
+}
 
+fun makeBoolCode(numVars: Int, numClauses: Int, varStep: Int):String {
+    return makeBoolCode(Random(System.currentTimeMillis()), makeVarIds(numVars), numClauses, varStep)
+}
 fun makeBoolCode(randy: Random, knownVars:List<Char>,numClauses:Int,varStep:Int): String {
     var clauseList:MutableList<String> = mutableListOf()
     for (clauseIter: Int in 1..numClauses) {
@@ -238,8 +246,9 @@ fun testBackbone():Boolean
     success = success && bbb.size == 2 && bbb.contains(Literal(fb.findVariable("a")!!,false)) &&
             bbb.contains(Literal(fb.findVariable("b")!!,true))
 
-    val fc = ClauseSetWatchedLiterals("D|!G|!J & D|!I|J & F|!J|!K & F|I & !F|!J & B|!F|!I & F|!J & D|!G & !F|G & !F|!G & !F|!J & !D|!F|!G|!K & !F|!G|K")
+    val fc = ClauseSetWatchedLiterals("D|!G|!J & D|!I|J & F|!J|!K & F|I & !F|!J & B|!F|!I & F|!J & D|!G & !F|G & !F|!G & !F|!J & !D|!F|!G|!K & !F|!G|K & M|N")
     val bbc = getBackboneKaiKue(fc)//has a backbone of [(D, true), (F, false), (I, true), (J, false)]
+    println(bbc)
     success = success && bbc.size == 4 && bbc.contains(Literal(fc.findVariable("D")!!,true)) &&
             bbc.contains(Literal(fc.findVariable("F")!!,false)) &&
             bbc.contains(Literal(fc.findVariable("I")!!,true)) &&
@@ -252,6 +261,35 @@ fun testBackbone():Boolean
         "Test of backbone failed"
     })
     return success
+}
+
+fun testBackboneStocha() {
+    val randy:Random = Random(1253132)
+    val knownVars = makeVarIds(8)
+
+    for (i in IntStream.range(0, 100)) {
+        var boolCode:String = makeBoolCode(randy,knownVars,10, 4)
+        val klaus = ClauseSetWatchedLiterals(boolCode)
+
+        println("Finding backbone for formula: ")
+        println(klaus)
+        val bb = getBackboneKaiKue(klaus,false)
+        val bbc = getBackboneKaiKue(klaus,true)
+        if (bb != bbc) {
+            println("mismatch in solver optimization")
+            println("With optimization: "+bbc)
+            println("Without optimization:" +bb)
+        }
+        if (bb.isEmpty()) {
+            println("backbones are empty")
+            println()
+            continue
+        }
+
+        println(bb)
+        println()
+    }
+
 }
 
 fun testImplicantOld() {
@@ -282,4 +320,29 @@ run{
 }
 
 return
+}
+
+
+fun timingTests(): Unit {
+    val cod = makeBoolCode(4000,5000,2100)
+    var cs = ClauseSet(cod)
+    var cswl = ClauseSetWatchedLiterals(cod)
+    val start1 = System.currentTimeMillis()
+    val erg1 = cdclSolve(cs)
+    val end1 = System.currentTimeMillis()
+    val start2 = System.currentTimeMillis()
+    val erg2 = cdclSolve(cswl)
+    val end2 = System.currentTimeMillis()
+
+    println(cod)
+    println(end1 - start1)
+    println(end2 - start2)
+
+    println(cs.isFulfilled)
+    println(cswl.isFulfilled)
+
+
+    /*println(erg1.filter { it.reason is Reason.InUnitClause }.size)
+    println(erg2.filter { it.reason is Reason.InUnitClause }.size)
+    erg1.print()*/
 }
