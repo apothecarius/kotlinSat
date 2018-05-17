@@ -1,5 +1,17 @@
+import javax.lang.model.element.VariableElement
+
 typealias VariableIdentifier = String
 enum class VariableSetting {True,False,Unset}
+fun VariableSetting.getOpposite():VariableSetting
+{
+    return when(this){
+        VariableSetting.True -> VariableSetting.False
+        VariableSetting.False -> VariableSetting.True
+        VariableSetting.Unset -> VariableSetting.Unset
+    }
+
+
+}
 
 class Variable constructor(c: VariableIdentifier)
 {

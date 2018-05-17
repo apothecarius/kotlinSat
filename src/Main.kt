@@ -70,7 +70,10 @@ fun main(args : Array<String>)
     println(getPrimeImplicant(klaus))
     println(getBackboneKaiKue(klaus))*/
 
-    timingTests()
+    //val code:String = makeBoolCode(50,20,3)
+    testQuickBackbone()
+
+    //timingTests()
 }
 
 

@@ -1,3 +1,4 @@
+import java.security.KeyStore
 
 data class CdclTableEntry(
         val level:Int,
@@ -194,7 +195,7 @@ fun cdclSolve(clauseSet: ClauseSet): CdclTable {
             }
             return table //found solution -> SAT
         }
-        else {
+        else { //do decision
             level++
             //always set false, let true come through learned clauses
             //getAnyFreeVariable mustnt be null, since if all variables
@@ -212,4 +213,16 @@ fun cdclSolve(clauseSet: ClauseSet): CdclTable {
     }
 }
 
-val decisionVariableSetting:VariableSetting = VariableSetting.False
+private var decisionVariableSetting:VariableSetting = VariableSetting.False
+
+fun invertDecisionVariableSetting() {
+    decisionVariableSetting = decisionVariableSetting.getOpposite()
+
+}
+fun setDecisionVariableSetting(v: Boolean) {
+    decisionVariableSetting = when (v) {
+        true -> VariableSetting.True
+        false -> VariableSetting.False
+
+    }
+}

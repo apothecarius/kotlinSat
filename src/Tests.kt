@@ -357,3 +357,29 @@ fun timingTests(): Unit {
     println(erg2.filter { it.reason is Reason.InUnitClause }.size)
     erg1.print()*/
 }
+
+
+fun testQuickBackbone() {
+    repeat(10) {
+        val code:String = makeBoolCode(1000,100,980)
+
+        if (cdclSAT(ClauseSetWatchedLiterals(code))) {
+            val t3 = System.currentTimeMillis()
+            println(getCdclDefaultIntersection(ClauseSetWatchedLiterals(code)).size)
+            val t4 = System.currentTimeMillis()
+
+            val t1 = System.currentTimeMillis()
+            println(getBackboneKaiKue(ClauseSetWatchedLiterals(code)).size)
+            val t2 = System.currentTimeMillis()
+
+
+            println(""+ (t4-t3) + "   "+(t2-t1)   )
+            println()
+        }
+
+
+
+
+    }
+    println("done")
+}
