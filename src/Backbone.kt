@@ -1,14 +1,20 @@
 
+
+var numCdclRuns:Int = 0
 /**
  * Kaiser-Kuechlin Algorithm to calculate backbones
  */
 fun getBackboneKaiKue(cs: ClauseSetWatchedLiterals, useOptimizations:Boolean = true):Set<Literal> {
+
+    //count CDCL runs for testing purposes
+    numCdclRuns = 0
 
     assert(cs.getPresentVariables().all { it.isUnset })
     cs.resetVars()
     val retu = mutableSetOf<Literal>()
     val skippedVars = mutableSetOf<Variable>()
     val baseImplicant:CdclTable = cdclSolve(cs)
+    numCdclRuns++
     if (cs.isEmpty) {
         return emptySet()
     }
@@ -23,6 +29,7 @@ fun getBackboneKaiKue(cs: ClauseSetWatchedLiterals, useOptimizations:Boolean = t
 
         //make another run with CDCL but prefer the other value for decided literals
         val intersection:Set<Variable> = getCdclDefaultIntersection(cs,baseImplicant).map { it.first }.toSet()
+        numCdclRuns++
         for (v: Variable in cs.getPresentVariables()) {
             if (!intersection.contains(v)) {
                 skippedVars.add(v)
@@ -48,6 +55,7 @@ fun getBackboneKaiKue(cs: ClauseSetWatchedLiterals, useOptimizations:Boolean = t
         }
         changedFormula.resetVars()
         val alternativeImplicant:CdclTable = cdclSolve(changedFormula)
+        numCdclRuns++
         if (changedFormula.isEmpty) {
             retu.add(toCheck)
         } else {
@@ -118,4 +126,65 @@ fun getCdclDefaultIntersection(cs: ClauseSet, firstSolution:CdclTable? = null):S
     invertDecisionVariableSetting()
 
     return retu
+}
+
+
+fun getBackboneIntersections(cs: ClauseSetWatchedLiterals):Set<Literal> {
+    numCdclRuns = 0
+    //1. run a cdcl pass
+    val firstTable:CdclTable = cdclSolve(cs)
+    numCdclRuns++
+    if (cs.isEmpty) {
+        //no backbone if clauseSet is not satisfiable at all
+        return emptySet()
+    }
+
+    //boil it down to the prime implicant
+    //val firstPrimeImplicant:Set<Variable> = getPrimeImplicantWithWatchedLiterals(cs,firstTable).map { it.variable }.toSet()
+
+    //mark all unset variables to not be in the backbone (make LinkedHashMap "candidates" with variables to setting, in order of
+    // occurence in CdclTable
+    //do not insert unset variables (arent in the prime implicant anyway)
+    val candidates:LinkedHashMap<Variable,Boolean> = LinkedHashMap()
+    /*firstTable.filter { getPrimeImplicantWithWatchedLiterals(cs,firstTable).map { it.variable }.
+            contains(it.affectedVariable) }.forEach {candidates.put(it.affectedVariable,it.value)}*/
+    firstTable.filter { it.level != 0 }.forEach{candidates.put(it.affectedVariable,!it.value)}
+
+
+    //need to extract BB vars from a table, if no candidates exist, then we should use the previous table
+    var intersectedTable:CdclTable = firstTable
+    var numKnownBackboneLiterals:Int = firstTable.countAxiomaticLiterals()
+
+    while (candidates.isNotEmpty()) {
+
+        //2. run the CDCL on the SAME formula (with learned clauses, but reset variable settings) and pass the candidates
+        // from the previous run, but use inverse settings to be used for decisions
+        cs.resetVars()
+        intersectedTable = cdclSolve(cs, candidates)
+        numCdclRuns++
+
+        //remove unset variables from candidates and those with different setting than is noted
+        for (cdclEntry: CdclTableEntry in intersectedTable) {
+            val candidateOccurence:Boolean? = candidates[cdclEntry.affectedVariable]
+            if (candidateOccurence != null && candidateOccurence == cdclEntry.value) {
+                //value was a candidate, but was set to something else this time
+                //so it cannot be in the backbone
+                candidates.remove(cdclEntry.affectedVariable)
+            }
+        }
+        //remove candidates that were recognized as backbone
+        val curAxiomaticEntries = intersectedTable.getAxiomaticEntries()
+        if (curAxiomaticEntries.count() > numKnownBackboneLiterals) { //quick precheck
+            numKnownBackboneLiterals = curAxiomaticEntries.count()
+            for (bb: CdclTableEntry in curAxiomaticEntries) {
+                candidates.remove(bb.affectedVariable)
+            }
+        }
+
+
+        //if candidates is empty return everything in current CdclTable on level 0
+        //else reiterate
+    }
+
+    return intersectedTable.filter { it.level == 0 }.map { Literal(it.affectedVariable,it.value) }.toSet()
 }

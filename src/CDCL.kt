@@ -1,4 +1,5 @@
 import java.security.KeyStore
+import kotlin.coroutines.experimental.buildSequence
 
 data class CdclTableEntry(
         val level:Int,
@@ -9,6 +10,20 @@ data class CdclTableEntry(
 typealias CdclTable = MutableList<CdclTableEntry>
 fun CdclTable.findReason(forVar: Variable):Reason? =
         this.find { it:CdclTableEntry -> it.affectedVariable == forVar }?.reason
+
+fun CdclTable.getAxiomaticEntries(): Sequence<CdclTableEntry> = buildSequence()
+{
+        for (e in iterator()) {
+        if (e.level != 0) {
+            break
+        }
+        yield(e)
+    }
+}
+
+fun CdclTable.countAxiomaticLiterals():Int {
+    return this.getAxiomaticEntries().count()
+}
 
 /**
  * Returns all variables that were set without a decision (except those that
@@ -101,9 +116,13 @@ fun cdclSAT(clauseSet:ClauseSet):Boolean
     return clauseSet.isFulfilled
 }
 
-fun cdclSolve(clauseSet: ClauseSet): CdclTable {
+fun cdclSolve(s: String) = cdclSolve(ClauseSetWatchedLiterals(s))
+fun cdclSAT(s:String) = cdclSAT(ClauseSetWatchedLiterals(s))
+
+fun cdclSolve(clauseSet: ClauseSet,variablePriorityQueue:LinkedHashMap<Variable,Boolean>? = null): CdclTable {
     var level:Int = 0
     val table : CdclTable = mutableListOf<CdclTableEntry>()
+    val candidateIterator:MutableIterator<MutableMap.MutableEntry<Variable, Boolean>>? = variablePriorityQueue?.iterator()
 
     while (true) {
         val units = clauseSet.getAndSetUnitsWithReason()
@@ -200,8 +219,31 @@ fun cdclSolve(clauseSet: ClauseSet): CdclTable {
             //always set false, let true come through learned clauses
             //getAnyFreeVariable mustnt be null, since if all variables
             //where set, the clauseSet would be SAT OR UNSAT
-            val explicitelySetVar:Variable = clauseSet.getAnyFreeVariable()!!
-            explicitelySetVar.setTo(decisionVariableSetting)
+            var explicitelySetVar:Variable? = null
+
+            //special for candidate/intersection backbone calculation
+            //if candidates are present
+            while (candidateIterator != null && candidateIterator.hasNext()) {
+                val curCandidate = candidateIterator.next()
+                if (!curCandidate.key.isUnset) {
+                    continue
+                } else {
+                    explicitelySetVar = curCandidate.key
+                    //note that
+                    explicitelySetVar.setTo(curCandidate.value)
+                    break
+                }
+            }
+
+            //else: if no candidates exist (anymore) or none are supposed to be used
+            // default to using any free variable
+            if(explicitelySetVar == null){
+                explicitelySetVar = clauseSet.getAnyFreeVariable()!!
+                explicitelySetVar.setTo(decisionVariableSetting)
+            }
+            explicitelySetVar!!
+
+
             if (clauseSet is ClauseSetWatchedLiterals) {
                 clauseSet.updateWatchedLiterals(explicitelySetVar)
             }

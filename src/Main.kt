@@ -19,8 +19,14 @@ fun main(args : Array<String>)
     //!B|!C|D|F & D|!F & B|!D & D|F & C|E & B|E & B|!C|F
     //D wird gelernt, wird aber nicht auf level 0 evaluiert
     //implicantTest4()
-    //val bb1 = ClauseSetWatchedLiterals("a & a|b|c")
+    val bb1 = ClauseSetWatchedLiterals("C|D|F & B|C|D|!E|!F & !B|!C|D|E & C|!E & B|!D|E|!F & !C|E|F & C|E & C|D|E")
+
+    //println(getBackboneIntersections(bb1))
+
+
+
     //val bb2 = ClauseSetWatchedLiterals("!a & a|b")
+//    val xxx = cdclSolve(bb1).getAxiomaticEntries()
 
     /*var x:Variable = Variable("a")
     var y: Variable = Variable("a")
@@ -72,6 +78,15 @@ fun main(args : Array<String>)
 
     //val code:String = makeBoolCode(50,20,3)
     testQuickBackbone()
+
+    /*val s = makeBoolCode(1000,110,800)
+    repeat(5) {
+        println(cdclSAT(s))
+        val bb = getBackboneIntersections(ClauseSetWatchedLiterals(s))
+        println(bb)
+
+    }*/
+
 
     //timingTests()
 }

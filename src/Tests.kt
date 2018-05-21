@@ -360,21 +360,40 @@ fun timingTests(): Unit {
 
 
 fun testQuickBackbone() {
-    repeat(10) {
-        val code:String = makeBoolCode(1000,100,980)
+    repeat(100) {
+        val code:String = makeBoolCode(1000,110,800)
 
         if (cdclSAT(ClauseSetWatchedLiterals(code))) {
-            val t3 = System.currentTimeMillis()
-            println(getCdclDefaultIntersection(ClauseSetWatchedLiterals(code)).size)
-            val t4 = System.currentTimeMillis()
-
+/*            val t1 = System.currentTimeMillis()
+            val estim:Set<Literal> = getCdclDefaultIntersection(ClauseSetWatchedLiterals(code))
+            val t2 = System.currentTimeMillis()
+*/
             val t1 = System.currentTimeMillis()
-            println(getBackboneKaiKue(ClauseSetWatchedLiterals(code)).size)
+            getBackboneKaiKue(ClauseSetWatchedLiterals(code),false)
+            val kaiKueSlowRuns = numCdclRuns
             val t2 = System.currentTimeMillis()
 
+            val t3 = System.currentTimeMillis()
+            val kaiKue:Set<Literal> = getBackboneKaiKue(ClauseSetWatchedLiterals(code))
+            val kaiKueRuns = numCdclRuns
+            val t4 = System.currentTimeMillis()
 
-            println(""+ (t4-t3) + "   "+(t2-t1)   )
+            val t5 = System.currentTimeMillis()
+            val inters:Set<Literal> = getBackboneIntersections(ClauseSetWatchedLiterals(code))
+            val intersRuns = numCdclRuns
+            val t6 = System.currentTimeMillis()
+
+
+            println(""+ (t2-t1) + "   "+(t4-t3) + "   "+(t6-t5)  )
+            println(""+ kaiKueSlowRuns + "   "+kaiKueRuns + "   "+intersRuns)
             println()
+            if (! (kaiKue.toString() == inters.toString())) {
+                println("Fail: ")
+                println(code)
+                println(kaiKue)
+                println(inters)
+            }
+
         }
 
 
