@@ -1,3 +1,4 @@
+import java.io.File
 import javax.print.attribute.IntegerSyntax
 
 const val verbose:Boolean = false
@@ -19,8 +20,19 @@ fun main(args : Array<String>)
     //!B|!C|D|F & D|!F & B|!D & D|F & C|E & B|E & B|!C|F
     //D wird gelernt, wird aber nicht auf level 0 evaluiert
     //implicantTest4()
-    val bb1 = ClauseSetWatchedLiterals("C|D|F & B|C|D|!E|!F & !B|!C|D|E & C|!E & B|!D|E|!F & !C|E|F & C|E & C|D|E")
+    //val bb1 = ClauseSetWatchedLiterals("C|D|F & B|C|D|!E|!F & !B|!C|D|E & C|!E & B|!D|E|!F & !C|E|F & C|E & C|D|E")
 
+
+    // TODO set of learned clauses explodes, so implement clause subsumption
+    val bsat180: File = File("C:\\Users\\apoth\\Downloads\\sat competition examples\\NoLimits\\mp1-bsat180-648.cnf")
+    assert(bsat180.isFile)
+    val klaus = readCnf(bsat180)
+    val t1 = System.currentTimeMillis()
+    val result = cdclSolve(klaus)
+    val t2 = System.currentTimeMillis()
+    println(t2 - t1)
+    println(klaus.isFulfilled)
+    println(result)
     //println(getBackboneIntersections(bb1))
 
 
@@ -77,7 +89,7 @@ fun main(args : Array<String>)
     println(getBackboneKaiKue(klaus))*/
 
     //val code:String = makeBoolCode(50,20,3)
-    testQuickBackbone()
+    //testQuickBackbone()
 
     /*val s = makeBoolCode(1000,110,800)
     repeat(5) {

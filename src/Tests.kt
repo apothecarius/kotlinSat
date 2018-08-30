@@ -106,11 +106,9 @@ fun makeBoolCode(randy: Random, knownVars:List<Char>,numClauses:Int,varStep:Int)
             if (varsIter >= knownVars.size) {
                 break
             } else {
-                var s:String
-                if (randy.nextBoolean()) {
-                    s = "!"
-                } else
-                    s = ""
+                var s:String =
+                if (randy.nextBoolean()) "!" else ""
+
                 s += knownVars.get(varsIter)
                 varList.add(s)
             }
@@ -360,44 +358,47 @@ fun timingTests(): Unit {
 
 
 fun testQuickBackbone() {
-    repeat(100) {
-        val code:String = makeBoolCode(1000,110,800)
+    var i = 10
+    while(i >= 1) {
+        val code:String = makeBoolCode(50,100,30)
 
         if (cdclSAT(ClauseSetWatchedLiterals(code))) {
-/*            val t1 = System.currentTimeMillis()
-            val estim:Set<Literal> = getCdclDefaultIntersection(ClauseSetWatchedLiterals(code))
-            val t2 = System.currentTimeMillis()
-*/
+            i--
+            println(".")
+            val tx1 = System.currentTimeMillis()
+            val estim: Set<Literal> = getCdclDefaultIntersection(ClauseSetWatchedLiterals(code))
+            val tx2 = System.currentTimeMillis()
+
             val t1 = System.currentTimeMillis()
-            getBackboneKaiKue(ClauseSetWatchedLiterals(code),false)
+            val kaiKueSlow: Set<Literal> = getBackboneKaiKue(ClauseSetWatchedLiterals(code), false)
             val kaiKueSlowRuns = numCdclRuns
             val t2 = System.currentTimeMillis()
 
             val t3 = System.currentTimeMillis()
-            val kaiKue:Set<Literal> = getBackboneKaiKue(ClauseSetWatchedLiterals(code))
+            val kaiKue: Set<Literal> = getBackboneKaiKue(ClauseSetWatchedLiterals(code))
             val kaiKueRuns = numCdclRuns
             val t4 = System.currentTimeMillis()
 
             val t5 = System.currentTimeMillis()
-            val inters:Set<Literal> = getBackboneIntersections(ClauseSetWatchedLiterals(code))
+            val inters: Set<Literal> = getBackboneIntersections(ClauseSetWatchedLiterals(code))
             val intersRuns = numCdclRuns
             val t6 = System.currentTimeMillis()
 
 
-            println(""+ (t2-t1) + "   "+(t4-t3) + "   "+(t6-t5)  )
-            println(""+ kaiKueSlowRuns + "   "+kaiKueRuns + "   "+intersRuns)
-            println()
-            if (! (kaiKue.toString() == inters.toString())) {
+            println("" + (t2 - t1) + "   " + (t4 - t3) + "   " + (t6 - t5))
+            println("" + kaiKueSlowRuns + "   " + kaiKueRuns + "   " + intersRuns)
+            println("   " + estim.size + "   " + kaiKueSlow.size + "   " + kaiKue.size + "   " + inters.size + "   ")
+            /*if (!(kaiKue.toString() == inters.toString())) {
                 println("Fail: ")
                 println(code)
                 println(kaiKue)
                 println(inters)
-            }
+            }*/
 
+        } else {
+            print(",")
         }
-
-
-
+       // println("skipping")
 
     }
     println("done")

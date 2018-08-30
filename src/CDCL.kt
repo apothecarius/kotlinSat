@@ -223,7 +223,7 @@ fun cdclSolve(clauseSet: ClauseSet,variablePriorityQueue:LinkedHashMap<Variable,
 
             //special for candidate/intersection backbone calculation
             //if candidates are present
-            while (candidateIterator != null && candidateIterator.hasNext()) {
+            while (candidateIterator != null && explicitelySetVar == null && candidateIterator.hasNext()) {
                 val curCandidate = candidateIterator.next()
                 if (!curCandidate.key.isUnset) {
                     continue
@@ -231,7 +231,6 @@ fun cdclSolve(clauseSet: ClauseSet,variablePriorityQueue:LinkedHashMap<Variable,
                     explicitelySetVar = curCandidate.key
                     //note that
                     explicitelySetVar.setTo(curCandidate.value)
-                    break
                 }
             }
 
@@ -255,7 +254,7 @@ fun cdclSolve(clauseSet: ClauseSet,variablePriorityQueue:LinkedHashMap<Variable,
     }
 }
 
-private var decisionVariableSetting:VariableSetting = VariableSetting.False
+private var decisionVariableSetting:VariableSetting = VariableSetting.True
 
 fun invertDecisionVariableSetting() {
     decisionVariableSetting = decisionVariableSetting.getOpposite()

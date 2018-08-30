@@ -146,9 +146,13 @@ fun getBackboneIntersections(cs: ClauseSetWatchedLiterals):Set<Literal> {
     // occurence in CdclTable
     //do not insert unset variables (arent in the prime implicant anyway)
     val candidates:LinkedHashMap<Variable,Boolean> = LinkedHashMap()
-    /*firstTable.filter { getPrimeImplicantWithWatchedLiterals(cs,firstTable).map { it.variable }.
-            contains(it.affectedVariable) }.forEach {candidates.put(it.affectedVariable,it.value)}*/
+
+    //TODO get prime implicant reduction to work
+
+    //firstTable.filter { getPrimeImplicantWithWatchedLiterals(cs,firstTable).map { it.variable }.
+    //        contains(it.affectedVariable) }.forEach {candidates.put(it.affectedVariable,!it.value)}
     firstTable.filter { it.level != 0 }.forEach{candidates.put(it.affectedVariable,!it.value)}
+    //TODO appearantly works even if both lines are inactive (and candidates is initially empty) investigate why //happens, when the testcase wasnt interesting
 
 
     //need to extract BB vars from a table, if no candidates exist, then we should use the previous table
@@ -179,6 +183,7 @@ fun getBackboneIntersections(cs: ClauseSetWatchedLiterals):Set<Literal> {
             for (bb: CdclTableEntry in curAxiomaticEntries) {
                 candidates.remove(bb.affectedVariable)
             }
+            //TODO extract axiomatic literals directly to reduce number of cdcl runs (by one)
         }
 
 
