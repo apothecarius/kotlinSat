@@ -121,10 +121,10 @@ fun makeBoolCode(randy: Random, knownVars:List<Char>,numClauses:Int,varStep:Int)
 
 
 fun testImplicant() {
-    var numTests=10
+    var numTests=50
     var numVars=4
-    var numClauses=7
-    var varStep=2
+    var numClauses=4
+    var varStep=3
 
     val randy: Random = Random()
 
@@ -142,14 +142,44 @@ fun testImplicant() {
             //cant find implicant of unsolvable formula
             continue
         }
-        println(cs.toString())
-        println("Base:"+getPrimeImplicant(cs))
+
+        val basePI : List<Literal> = getPrimeImplicant(cs).sortedBy { it.first.id }
+
 
         var csCopy = ClauseSetWatchedLiterals(boolCode)
         val table = cdclSolve(csCopy)
+        val watchedLitPI = getPrimeImplicantWithWatchedLiterals(csCopy,table).sortedBy { it.first.id }
 
-        println("WL:  "+getPrimeImplicantWithWatchedLiterals(csCopy,table))
-        println()
+
+        fun isLiteralSetDifferent(setA:List<Literal>,setB:List<Literal>):Boolean
+        {
+            if (setA.size != setB.size) {
+                return true
+            }
+            val itA = setA.iterator()
+            val itB = setB.iterator()
+
+            while (itA.hasNext()) {
+                assert(itB.hasNext())
+                var a:Literal = itA.next()
+                var b:Literal = itB.next()
+                if (a.variable.id != b.variable.id) {
+                    return true
+                }
+                if (a.predicate != b.predicate) {
+                    return true
+                }
+            }
+            return false
+        }
+
+        if (isLiteralSetDifferent(basePI,watchedLitPI)) {
+            println(cs.toString())
+            println("Base: "+basePI)
+            println("WL: "+watchedLitPI)
+            println()
+        }
+
         //TODO ausgabe sortieren und dann automatisch verlgeichen
     }
 }
@@ -161,8 +191,8 @@ fun implicantTest1()
 {
     //fehlerfall 1: mit WL hat ein unnötiges literal
     val fehlerKlausCode = "!C|!E & !B|D & !B|D|!E & B|C|D & !B|!D & !C|!E & C|!D & C"
-    val fehlerKlaus1 = ClauseSetWatchedLiterals(fehlerKlausCode);
-    val fehlerKlaus2 = ClauseSetWatchedLiterals(fehlerKlausCode);
+    val fehlerKlaus1 = ClauseSetWatchedLiterals(fehlerKlausCode)
+    val fehlerKlaus2 = ClauseSetWatchedLiterals(fehlerKlausCode)
     cdclSAT(fehlerKlaus1)
     println(getPrimeImplicant(fehlerKlaus1))
     println(getPrimeImplicantWithWatchedLiterals(fehlerKlaus2))

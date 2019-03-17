@@ -17,7 +17,7 @@ open class ClauseSet(c:Array<Clause>)
      */
     constructor(cs:String):this(cs,VariableSet()) //integrate the below into this constructor
     protected constructor(cs:String,vs:VariableSet)  :
-            this(cs.split(delimiters="&").
+            this(cs.split("&").
                     map { c:String -> Clause(c,vs) }.toTypedArray())
 
     constructor(cs:ClauseSet) : this(cs.clauses.map { it -> Clause(it) }.toTypedArray())
@@ -36,7 +36,7 @@ open class ClauseSet(c:Array<Clause>)
         this.clauses.add(c)
     }
 
-    open fun getPresentVariables(): Sequence<Variable> = buildSequence {
+    open fun getPresentVariables(): Sequence<Variable> = sequence {
         //the variables that were already returned
         val metVars:MutableSet<Variable> = mutableSetOf()
         for (c: Clause in clauses) {

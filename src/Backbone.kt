@@ -139,15 +139,14 @@ fun getBackboneIntersections(cs: ClauseSetWatchedLiterals):Set<Literal> {
         return emptySet()
     }
 
-    //boil it down to the prime implicant
+    //boil it down to the prime implicant //TODO get prime implicant reduction to work
     //val firstPrimeImplicant:Set<Variable> = getPrimeImplicantWithWatchedLiterals(cs,firstTable).map { it.variable }.toSet()
+    val firstPrimeImplicant:Set<Variable> = getPrimeImplicant(cs).map { it.variable }.toSet()
 
     //mark all unset variables to not be in the backbone (make LinkedHashMap "candidates" with variables to setting, in order of
     // occurence in CdclTable
     //do not insert unset variables (arent in the prime implicant anyway)
     val candidates:LinkedHashMap<Variable,Boolean> = LinkedHashMap()
-
-    //TODO get prime implicant reduction to work
 
     //firstTable.filter { getPrimeImplicantWithWatchedLiterals(cs,firstTable).map { it.variable }.
     //        contains(it.affectedVariable) }.forEach {candidates.put(it.affectedVariable,!it.value)}

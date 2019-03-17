@@ -1,5 +1,3 @@
-import java.security.KeyStore
-import kotlin.coroutines.experimental.buildSequence
 
 data class CdclTableEntry(
         val level:Int,
@@ -11,7 +9,7 @@ typealias CdclTable = MutableList<CdclTableEntry>
 fun CdclTable.findReason(forVar: Variable):Reason? =
         this.find { it:CdclTableEntry -> it.affectedVariable == forVar }?.reason
 
-fun CdclTable.getAxiomaticEntries(): Sequence<CdclTableEntry> = buildSequence()
+fun CdclTable.getAxiomaticEntries(): Sequence<CdclTableEntry> = sequence()
 {
         for (e in iterator()) {
         if (e.level != 0) {
@@ -116,7 +114,11 @@ fun cdclSAT(clauseSet:ClauseSet):Boolean
     return clauseSet.isFulfilled
 }
 
-fun cdclSolve(s: String) = cdclSolve(ClauseSetWatchedLiterals(s))
+fun cdclSolve(s:String) : Unit {
+    cdclSolve(ClauseSetWatchedLiterals(s))
+}
+
+//fun cdclSolve(s: String) = cdclSolve(ClauseSetWatchedLiterals(s))
 fun cdclSAT(s:String) = cdclSAT(ClauseSetWatchedLiterals(s))
 
 fun cdclSolve(clauseSet: ClauseSet,variablePriorityQueue:LinkedHashMap<Variable,Boolean>? = null): CdclTable {
@@ -209,8 +211,8 @@ fun cdclSolve(clauseSet: ClauseSet,variablePriorityQueue:LinkedHashMap<Variable,
         else if (clauseSet.isFulfilled) {
 
             if (verbose) {
-                println("SAT")
                 table.print()
+                println("SAT")
             }
             return table //found solution -> SAT
         }

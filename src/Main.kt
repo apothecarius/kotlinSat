@@ -10,8 +10,18 @@ val activeWLIterationScheme:WatchedLiteralIterationScheme = WatchedLiteralIterat
 
 
 
-fun main(args : Array<String>)
+fun main()
 {
+    //clauseset where primeImplicatWithWatchedLiterals fails
+    val unpi1 = ClauseSetWatchedLiterals("B|C|!E & !C|E & !D & B|!C")
+    val unpi2 = ClauseSetWatchedLiterals("!B|!D & !D|E & !D|!E & !C|!E")
+    val unpi3 = ClauseSetWatchedLiterals("B|!E & B|C|E & B|!E & !B|!C|D")
+    val table = cdclSolve(unpi3)
+
+    /*println("\n"+getPrimeImplicant(unpi3))
+    val unpi3_ = ClauseSetWatchedLiterals("B|!E & B|C|E & B|!E & !B|!C|D")
+    val table_ = cdclSolve(unpi3_)
+    println("\n"+getPrimeImplicantWithWatchedLiterals(unpi3_))*/
     //interessante formeln für CDCL Zeilenverschieben
     //println(getBackboneKaiKue(klaus)) NIX GRAD
     //println()
@@ -21,8 +31,11 @@ fun main(args : Array<String>)
     //D wird gelernt, wird aber nicht auf level 0 evaluiert
     //implicantTest4()
     //val bb1 = ClauseSetWatchedLiterals("C|D|F & B|C|D|!E|!F & !B|!C|D|E & C|!E & B|!D|E|!F & !C|E|F & C|E & C|D|E")
+    //val klaus = ClauseSetWatchedLiterals("D|!G|!J & D|!I|J & F|!J|!K & F|I & !F|!J & B|!F|!I & F|!J & D|!G & !F|G & !F|!G & !F|!J & !D|!F|!G|!K & !F|!G|K")
+    testImplicant()
 
-
+    //println("\n"+getBackboneIntersections(klaus))
+/*
     // TODO set of learned clauses explodes, so implement clause subsumption
     val bsat180: File = File("C:\\Users\\apoth\\Downloads\\sat competition examples\\NoLimits\\mp1-bsat180-648.cnf")
     assert(bsat180.isFile)
@@ -34,7 +47,7 @@ fun main(args : Array<String>)
     println(klaus.isFulfilled)
     println(result)
     //println(getBackboneIntersections(bb1))
-
+*/
 
 
     //val bb2 = ClauseSetWatchedLiterals("!a & a|b")
