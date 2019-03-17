@@ -1,3 +1,4 @@
+import kotlin.coroutines.experimental.buildSequence
 
 data class CdclTableEntry(
         val level:Int,
@@ -9,7 +10,7 @@ typealias CdclTable = MutableList<CdclTableEntry>
 fun CdclTable.findReason(forVar: Variable):Reason? =
         this.find { it:CdclTableEntry -> it.affectedVariable == forVar }?.reason
 
-fun CdclTable.getAxiomaticEntries(): Sequence<CdclTableEntry> = sequence()
+fun CdclTable.getAxiomaticEntries(): Sequence<CdclTableEntry> = buildSequence()
 {
         for (e in iterator()) {
         if (e.level != 0) {

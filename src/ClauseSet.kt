@@ -36,7 +36,7 @@ open class ClauseSet(c:Array<Clause>)
         this.clauses.add(c)
     }
 
-    open fun getPresentVariables(): Sequence<Variable> = sequence {
+    open fun getPresentVariables(): Sequence<Variable> = buildSequence {
         //the variables that were already returned
         val metVars:MutableSet<Variable> = mutableSetOf()
         for (c: Clause in clauses) {

@@ -1,5 +1,4 @@
-import java.io.File
-import javax.print.attribute.IntegerSyntax
+
 
 const val verbose:Boolean = false
 
@@ -10,7 +9,7 @@ val activeWLIterationScheme:WatchedLiteralIterationScheme = WatchedLiteralIterat
 
 
 
-fun main()
+fun main(args:Array<String>)
 {
     //clauseset where primeImplicatWithWatchedLiterals fails
     val unpi1 = ClauseSetWatchedLiterals("B|C|!E & !C|E & !D & B|!C")
@@ -18,10 +17,10 @@ fun main()
     val unpi3 = ClauseSetWatchedLiterals("B|!E & B|C|E & B|!E & !B|!C|D")
     val table = cdclSolve(unpi3)
 
-    /*println("\n"+getPrimeImplicant(unpi3))
+    println("\n"+getPrimeImplicant(unpi3))
     val unpi3_ = ClauseSetWatchedLiterals("B|!E & B|C|E & B|!E & !B|!C|D")
     val table_ = cdclSolve(unpi3_)
-    println("\n"+getPrimeImplicantWithWatchedLiterals(unpi3_))*/
+    println("\n"+getPrimeImplicantWithWatchedLiterals(unpi3_))
     //interessante formeln für CDCL Zeilenverschieben
     //println(getBackboneKaiKue(klaus)) NIX GRAD
     //println()
