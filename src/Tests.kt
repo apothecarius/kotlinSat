@@ -121,7 +121,7 @@ fun makeBoolCode(randy: Random, knownVars:List<Char>,numClauses:Int,varStep:Int)
 
 
 fun testImplicant() {
-    var numTests=50
+    var numTests=500
     var numVars=4
     var numClauses=4
     var varStep=3
@@ -174,7 +174,7 @@ fun testImplicant() {
         }
 
         if (isLiteralSetDifferent(basePI,watchedLitPI)) {
-            println(cs.toString())
+            println(boolCode + " => "+cs.toString())
             println("Base: "+basePI)
             println("WL: "+watchedLitPI)
             println()

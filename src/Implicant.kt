@@ -126,7 +126,6 @@ fun getPrimeImplicant(clauseSet: ClauseSet):Set<Literal> {
     }
 
 
-
     do{
         val nonPrime:Variable = getNonPrimeImplicantVariable(clauseSet)?:break
         nonPrime.unset()
@@ -145,11 +144,10 @@ fun getPrimeImplicant(clauseSet: ClauseSet):Set<Literal> {
         ClauseWatchedLiterals.watchedLiteralsForUnitVariables = true
     }
 
-
     return retu
 }
 
-fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals) =
+fun  getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals) =
         getPrimeImplicantWithWatchedLiterals(clauseSet,cdclSolve(clauseSet))
 fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
                                          table:CdclTable):Set<Literal> {
@@ -201,7 +199,15 @@ fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
         val occurences:Set<ClauseWatchedLiterals> = HashSet(literalToClause.get(l))
         for (clause in occurences) {
             if (HDL_constr(clause, l, literalToClause)) {
-                requiredLiterals.add(clause.getPrimeLiteral()!!)
+                if (requiredLiterals.contains(l)) {
+                    continue
+                }
+                //var newPrimeLiteral:Literal = clause.getPrimeLiteral()!!
+//                assert(!requiredLiterals.contains(newPrimeLiteral))
+                //assert(newPrimeLiteral == l)
+                requiredLiterals.add(l)
+                //have to give the variable its setting back, as it is now assumed that it must have this setting
+                l.first.setTo((l.predicate))
             }
 
         }
@@ -214,6 +220,7 @@ fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
             //l.variable.unset()
             impliedW(Literal(l.variable,!l.predicate),initialImplicant,literalToClause)
             l.variable.setTo(prevSetting)
+
         }
     }
 
@@ -244,6 +251,8 @@ fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
         model.remove(literalToRemove)
         literalToRemove.variable.unset()
         impliedW(literalToRemove,primeImplicant,literalToClause)
+
+        //impliedW0(model,primeImplicant,literalToClause)
     }
 
 

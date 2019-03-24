@@ -190,13 +190,13 @@ class ClauseWatchedLiterals constructor(disjunction: Array<Literal>) : Clause(di
         }
     override val isSatisfied: Boolean
         get() {
-            assert(watchedLiteralsForUnitVariables)
+            //assert(watchedLiteralsForUnitVariables)
             return this.literals[watchedHead].becomesTrue() ||
                     this.literals[watchedTail].becomesTrue()
         }
     override val isEmpty: Boolean
         get() {
-            assert(watchedLiteralsForUnitVariables)
+            //assert(watchedLiteralsForUnitVariables)
             return this.watchedHead == this.watchedTail &&
                     this.literals[this.watchedTail].becomesFalse()
         }
