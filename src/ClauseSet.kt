@@ -26,6 +26,8 @@ open class ClauseSet(c:Array<Clause>)
         get() = clauses.all { a:Clause -> a.isSatisfied }
     val isEmpty : Boolean
         get() = clauses.any { a -> a.isEmpty }
+    val isFresh: Boolean
+        get() = this.getPresentVariables().all { it.isUnset }
 
     fun getClauses(): List<Clause> {
         return this.clauses

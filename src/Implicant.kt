@@ -118,6 +118,8 @@ fun isPrimeImplicant(clauseSet: ClauseSet): Boolean =
  * affects the recognition of unfulfilled clauses)
  */
 fun getPrimeImplicant(clauseSet: ClauseSet):Set<Literal> {
+    if(clauseSet.isFresh)
+        cdclSAT(clauseSet)
     assert(clauseSet.isFulfilled)
     val originalSetting:Set<Literal> = clauseSet.getVariableSetting()
     if (clauseSet is ClauseSetWatchedLiterals) {
@@ -150,41 +152,49 @@ fun getPrimeImplicant(clauseSet: ClauseSet):Set<Literal> {
 fun  getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals) =
         getPrimeImplicantWithWatchedLiterals(clauseSet,cdclSolve(clauseSet))
 fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
-                                         table:CdclTable):Set<Literal> {
-
+                                         table:CdclTable):Set<Literal>
+{
     fun HDL_constr(checkedClause:ClauseWatchedLiterals,changedLiteral:Literal,
-                   lit2clause:WatchedLiteralToClause):Boolean {
+                   lit2clause:WatchedLiteralToClause):Boolean
+    {
         //need to know, which literal was moved
         val prevWatcheds = checkedClause.getBothWatchedLiterals()
         lit2clause.remove(changedLiteral,checkedClause)
 
-        if (activeWLIterationScheme == WatchedLiteralIterationScheme.ToMiddle) {
+        if (activeWLIterationScheme == WatchedLiteralIterationScheme.ToMiddle)
+        {
             assert(checkedClause.watchedHead <= checkedClause.watchedTail)
         }
         checkedClause.updateWatchedLiterals(changedLiteral.variable)
-        if (activeWLIterationScheme == WatchedLiteralIterationScheme.ToMiddle) {
+        if (activeWLIterationScheme == WatchedLiteralIterationScheme.ToMiddle)
+        {
             assert(checkedClause.watchedHead <= checkedClause.watchedTail)
         }
 
         //order of cases as in paper
-        if (! checkedClause.isPrimeFulfilled()) {
+        if (! checkedClause.isPrimeFulfilled())
+        {
             //found a new literal, so update literalToClause map
             val curWatcheds = checkedClause.getBothWatchedLiterals()
             assert(curWatcheds.second != null)
             var nuWatched:Literal =
-                    if (prevWatcheds.first == curWatcheds.first) {
-                        curWatcheds.second!!
-                    } else if (prevWatcheds.second == curWatcheds.second) {
-                        curWatcheds.first
-                    }else{
-                        assert(false)
-                        return true
-                    }
+                if (prevWatcheds.first == curWatcheds.first)
+                {
+                    curWatcheds.second!!
+                } else if (prevWatcheds.second == curWatcheds.second)
+                {
+                    curWatcheds.first
+                }else
+                {
+                    assert(false)
+                    curWatcheds.first
+                }
 
             lit2clause.put(nuWatched,checkedClause)
 
             return false
-        } else {
+        } else
+        {
             //literal is the last remaining
             //also remove the other reference, to not touch checkedclause again unnecessarily
             lit2clause.remove(checkedClause.getPrimeLiteral()!!,checkedClause)
@@ -192,35 +202,37 @@ fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
         }
     }
 
-    fun impliedW(l:Literal,requiredLiterals:MutableSet<Literal>,literalToClause:WatchedLiteralToClause) {
+    fun impliedW(l:Literal,requiredLiterals:MutableSet<Literal>,literalToClause:WatchedLiteralToClause)
+    {
         //paper passes C and M, but C is never used and the relevant part of M is in the variables in the clauses in W
 
         //prevent concurrentmodificationException by copying
         val occurences:Set<ClauseWatchedLiterals> = HashSet(literalToClause.get(l))
         for (clause in occurences) {
             if (HDL_constr(clause, l, literalToClause)) {
+
                 if (requiredLiterals.contains(l)) {
                     continue
                 }
-                //var newPrimeLiteral:Literal = clause.getPrimeLiteral()!!
-//                assert(!requiredLiterals.contains(newPrimeLiteral))
+                var newPrimeLiteral:Literal = clause.getPrimeLiteral()!!
+                //assert(!requiredLiterals.contains(l))
                 //assert(newPrimeLiteral == l)
-                requiredLiterals.add(l)
+                requiredLiterals.add(newPrimeLiteral)
                 //have to give the variable its setting back, as it is now assumed that it must have this setting
-                l.first.setTo((l.predicate))
+                //l.first.setTo(l.predicate)
             }
-
         }
     }
-    fun impliedW0(model:Set<Literal>, initialImplicant:MutableSet<Literal>,literalToClause:WatchedLiteralToClause) {
+    fun impliedW0(model:Set<Literal>, initialImplicant:MutableSet<Literal>,literalToClause:WatchedLiteralToClause)
+    {
         val possiblyUnnecessaryLiterals:Collection<Literal> = model.filter {! initialImplicant.contains(it) }
-        for (l: Literal in possiblyUnnecessaryLiterals) {
+        for (l: Literal in possiblyUnnecessaryLiterals)
+        {
             println("Updating(w0): "+l)
             val prevSetting:Boolean = l.variable.boolSetting!!
             //l.variable.unset()
             impliedW(Literal(l.variable,!l.predicate),initialImplicant,literalToClause)
             l.variable.setTo(prevSetting)
-
         }
     }
 
@@ -238,21 +250,21 @@ fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
             filter { ! it.isUnset }.map { it -> Literal(it,it.boolSetting!!) }.
             toMutableSet()
     //"PI" in the paper, the set of variables that are in the prime implicant
-    var primeImplicant:MutableSet<Literal> = table.getUnitVariables().toMutableSet()
+    var primeImplicant:MutableSet<Literal> = mutableSetOf() //table.getUnitVariables().toMutableSet()
     //"W" in the paper
     var literalToClause:WatchedLiteralToClause = clauseSet.getWatchedLiteralToClause()
+
 
     //impliedW0(model,primeImplicant,literalToClause)
 
     while(true) {
         //get a literal that hasnt yet been set to
-        var literalToRemove:Literal = model.filter { it -> !primeImplicant.contains(it)}.firstOrNull() ?: break
+        var literalToRemove:Literal = model.filter{!primeImplicant.contains(it)}.firstOrNull() ?: break
         //println("removing "+literalToRemove)
         model.remove(literalToRemove)
         literalToRemove.variable.unset()
         impliedW(literalToRemove,primeImplicant,literalToClause)
 
-        //impliedW0(model,primeImplicant,literalToClause)
     }
 
 

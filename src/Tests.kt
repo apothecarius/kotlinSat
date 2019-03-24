@@ -132,7 +132,7 @@ fun testImplicant() {
     for (i: Int in 65..65 + numVars) {
         knownVars.add(i.toChar())
     }
-
+    var numFails:Int = 0
     for (_iter:Int in 1..numTests) {
         var boolCode: String = makeBoolCode(randy, knownVars, numClauses, varStep)
         var cs = ClauseSetWatchedLiterals(boolCode)
@@ -149,7 +149,6 @@ fun testImplicant() {
         var csCopy = ClauseSetWatchedLiterals(boolCode)
         val table = cdclSolve(csCopy)
         val watchedLitPI = getPrimeImplicantWithWatchedLiterals(csCopy,table).sortedBy { it.first.id }
-
 
         fun isLiteralSetDifferent(setA:List<Literal>,setB:List<Literal>):Boolean
         {
@@ -178,10 +177,12 @@ fun testImplicant() {
             println("Base: "+basePI)
             println("WL: "+watchedLitPI)
             println()
+            numFails++
         }
 
         //TODO ausgabe sortieren und dann automatisch verlgeichen
     }
+    println("Fails: "+numFails+"/"+numTests)
 }
 
 

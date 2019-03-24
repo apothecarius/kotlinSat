@@ -1,6 +1,6 @@
 
 
-const val verbose:Boolean = false
+const val verbose:Boolean = true
 
 
 enum class WatchedLiteralIterationScheme {
@@ -16,15 +16,17 @@ fun main(args:Array<String>)
 
     val code = "C|D & C & B|C|!E & !B|D|!E"
     //val code = "!D & C|!E & C|E & !B|!D|!E"
-    //val code = "B|!D & !C|E & !C|E & B|D|!E"
+    //val code = "B|!D & !C|E & !C|E & B|D|!E" k
 
+    //val code = "!B|D & !B|C|E & C & B|D"
 
-
+    println(code)
     val unpi1 = ClauseSetWatchedLiterals(code)
     val unpi2 = ClauseSetWatchedLiterals(code)
-    val table = cdclSolve(unpi1)
-    println("\n"+getPrimeImplicant(unpi1))
-    //val table_ = cdclSolve(unpi2) TODO if this is called (but the resulting table is not passed, then everything works oO ?????
+    //val table = cdclSolve(unpi1)
+    println("\n"+getPrimeImplicant(unpi1)+"\n")
+    //cdclSolve(unpi2) //TODO if this is called (but the resulting table is not passed, then everything works oO ?????
+    //val table_ = cdclSolve(unpi2)
     println("\n"+getPrimeImplicantWithWatchedLiterals(unpi2))
     //interessante formeln für CDCL Zeilenverschieben
     //println(getBackboneKaiKue(klaus)) NIX GRAD
