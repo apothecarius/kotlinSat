@@ -135,6 +135,9 @@ fun testImplicant() {
     var numFails:Int = 0
     for (_iter:Int in 1..numTests) {
         var boolCode: String = makeBoolCode(randy, knownVars, numClauses, varStep)
+        if (verbose) {
+            println(boolCode)
+        }
         var cs = ClauseSetWatchedLiterals(boolCode)
 
         cdclSolve(cs)

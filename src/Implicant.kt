@@ -201,13 +201,14 @@ fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
             return true
         }
     }
-
+    //paper passes C and M, but C is never used and the relevant part of M is in the variables in the clauses in W
     fun impliedW(l:Literal,requiredLiterals:MutableSet<Literal>,literalToClause:WatchedLiteralToClause)
     {
-        //paper passes C and M, but C is never used and the relevant part of M is in the variables in the clauses in W
-
+        if (verbose) {
+            println("w: "+l)
+        }
         //prevent concurrentmodificationException by copying
-        val occurences:Set<ClauseWatchedLiterals> = HashSet(literalToClause.get(l))
+        val occurences = literalToClause.get(l).toList()
         for (clause in occurences) {
             if (HDL_constr(clause, l, literalToClause)) {
 
@@ -238,6 +239,9 @@ fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
 
     //prepare the clauseset
     clauseSet.removeFalsyVariables()
+    if (verbose) {
+        println("~>"+clauseSet.toString())
+    }
     clauseSet.prepareWatchedLiteralsForImplicants()
 
 
@@ -250,7 +254,9 @@ fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
             filter { ! it.isUnset }.map { it -> Literal(it,it.boolSetting!!) }.
             toMutableSet()
     //"PI" in the paper, the set of variables that are in the prime implicant
-    var primeImplicant:MutableSet<Literal> = mutableSetOf() //table.getUnitVariables().toMutableSet()
+    var primeImplicant:MutableSet<Literal> = /*mutableSetOf()*///table.getUnitVariables().toMutableSet()
+            clauseSet.getClauses().filter { it.literals.count() == 1 }.map { it.literals[0]}.toMutableSet()
+    clauseSet.resetAllWatchedLiterals()
     //"W" in the paper
     var literalToClause:WatchedLiteralToClause = clauseSet.getWatchedLiteralToClause()
 

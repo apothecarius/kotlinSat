@@ -14,10 +14,11 @@ fun main(args:Array<String>)
 {
     //clauseset where primeImplicatWithWatchedLiterals fails
 
-    val code = "C|D & C & B|C|!E & !B|D|!E"
-    //val code = "!D & C|!E & C|E & !B|!D|!E"
-    //val code = "B|!D & !C|E & !C|E & B|D|!E" k
-
+    //val code = "C|D & C & B|C|!E & !B|D|!E"
+    //val code = "!D & C|!D & !B|C|E & B|C|!E"
+    //val code = "B|!D & !C|E & !C|E & B|D|!E"
+    //val code = "!B|!C|D|F & D|!F & B|!D & D|F & C|E & B|E & B|!C|F"
+    val code = "C|D|E & !C|D|E & B|D|E & !B|!E"
     //val code = "!B|D & !B|C|E & C & B|D"
 
     println(code)
@@ -29,6 +30,7 @@ fun main(args:Array<String>)
     //val table_ = cdclSolve(unpi2)
     println("\n"+getPrimeImplicantWithWatchedLiterals(unpi2))
     //interessante formeln für CDCL Zeilenverschieben
+
     //println(getBackboneKaiKue(klaus)) NIX GRAD
     //println()
     //println(getBackboneKaiKue(klaus2))
@@ -38,7 +40,7 @@ fun main(args:Array<String>)
     //implicantTest4()
     //val bb1 = ClauseSetWatchedLiterals("C|D|F & B|C|D|!E|!F & !B|!C|D|E & C|!E & B|!D|E|!F & !C|E|F & C|E & C|D|E")
     //val klaus = ClauseSetWatchedLiterals("D|!G|!J & D|!I|J & F|!J|!K & F|I & !F|!J & B|!F|!I & F|!J & D|!G & !F|G & !F|!G & !F|!J & !D|!F|!G|!K & !F|!G|K")
-    //testImplicant()
+    testImplicant()
 
     //println("\n"+getBackboneIntersections(klaus))
 /*
