@@ -121,6 +121,28 @@ fun makeBoolCode(randy: Random, knownVars:List<Char>,numClauses:Int,varStep:Int)
 }
 
 
+fun isLiteralSetDifferent(setA:List<Literal>,setB:List<Literal>):Boolean
+{
+    if (setA.size != setB.size) {
+        return true
+    }
+    val itA = setA.iterator()
+    val itB = setB.iterator()
+
+    while (itA.hasNext()) {
+        assert(itB.hasNext())
+        var a:Literal = itA.next()
+        var b:Literal = itB.next()
+        if (a.variable.id != b.variable.id) {
+            return true
+        }
+        if (a.predicate != b.predicate) {
+            return true
+        }
+    }
+    return false
+}
+
 fun testImplicant() {
     var numTests=500
     var numVars=40
@@ -157,27 +179,7 @@ fun testImplicant() {
         val table = cdclSolve(csCopy)
         val watchedLitPI = getPrimeImplicantWithWatchedLiterals(csCopy,table).sortedBy { it.first.id }
 
-        fun isLiteralSetDifferent(setA:List<Literal>,setB:List<Literal>):Boolean
-        {
-            if (setA.size != setB.size) {
-                return true
-            }
-            val itA = setA.iterator()
-            val itB = setB.iterator()
 
-            while (itA.hasNext()) {
-                assert(itB.hasNext())
-                var a:Literal = itA.next()
-                var b:Literal = itB.next()
-                if (a.variable.id != b.variable.id) {
-                    return true
-                }
-                if (a.predicate != b.predicate) {
-                    return true
-                }
-            }
-            return false
-        }
 
         if (isLiteralSetDifferent(basePI,watchedLitPI)) {
             println(boolCode + " => "+cs.toString())
@@ -399,11 +401,24 @@ fun timingTests(): Unit {
 }
 
 
-fun testQuickBackbone() {
-    var numTests=10
-    var numVars=4
-    var numClauses=6
-    var varStep=3
+fun testQuickBackbone(bigFormulas:Boolean = true) {
+    var numTests:Int = 500
+    var numVars:Int
+    var numClauses:Int
+    var varStep:Int
+    if (bigFormulas)
+    {
+        numVars=40
+        numClauses=325
+        varStep=16
+    }
+    else
+    {
+        numVars=4
+        numClauses=6
+        varStep=3
+    }
+
 
     val randy: Random = Random()
 
@@ -416,10 +431,10 @@ fun testQuickBackbone() {
 
         if (cdclSAT(ClauseSetWatchedLiterals(code)))
         {
-
-            val tx1 = System.currentTimeMillis()
+            runTests++
+/*            val tx1 = System.currentTimeMillis()
             val estim: Set<Literal> = getCdclDefaultIntersection(ClauseSetWatchedLiterals(code))
-            val tx2 = System.currentTimeMillis()
+            val tx2 = System.currentTimeMillis()*/
 
             val t1 = System.currentTimeMillis()
             val kaiKueSlow: Set<Literal> = getBackboneKaiKue(ClauseSetWatchedLiterals(code), false)
@@ -435,23 +450,25 @@ fun testQuickBackbone() {
             val intersRuns = numCdclRuns
             val t6 = System.currentTimeMillis()
 
-            val failure:Boolean = kaiKue.size != inters.size
+            val failure:Boolean = isLiteralSetDifferent(inters.toList().sortedBy { it.variable.id },
+                    kaiKue.toList().sortedBy { it.variable.id })
             if (failure) {
+                numFails++
                 println(code)
                 println(inters)
             }
 
             println("mSecs:" + (t2 - t1) + "   " + (t4 - t3) + "   " + (t6 - t5))
             println("Runs: " + kaiKueSlowRuns + "   " + kaiKueRuns + "   " + intersRuns)
-            println("numBB:" + estim.size + "   " + kaiKueSlow.size + "   " + kaiKue.size + "   " + inters.size + "   ")
+            println("numBB:" +  kaiKueSlow.size + "   " + kaiKue.size + "   " + inters.size + "   ")
 
             println()
-        }
-        else {
-            print(",")
         }
        // println("skipping")
 
     }
-    println("done")
+
+    println()
+    println("run / failed")
+    println(runTests.toString()+" / "+numFails)
 }

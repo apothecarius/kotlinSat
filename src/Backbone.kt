@@ -189,7 +189,6 @@ fun getBackboneIntersections(cs: ClauseSetWatchedLiterals):Set<Literal> {
         //if candidates is empty return everything in current CdclTable on level 0
         //else reiterate
     }
-    println("Took: "+numCdclRuns)
 
     return intersectedTable.filter { it.level == 0 }.map { Literal(it.affectedVariable,it.value) }.toSet()
 }

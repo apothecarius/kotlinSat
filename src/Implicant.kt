@@ -198,7 +198,7 @@ fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
             //literal is the last remaining
             //also remove the other reference, to not touch checkedclause again unnecessarily
             lit2clause.remove(checkedClause.getPrimeLiteral()!!,checkedClause)
-            assert(checkedClause.isSatisfied)
+            //assert(checkedClause.isSatisfied)
             return true
         }
     }
@@ -221,7 +221,8 @@ fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
                 //assert(newPrimeLiteral == l)
                 requiredLiterals.add(newPrimeLiteral)
                 //have to give the variable its setting back, as it is now assumed that it must have this setting
-                //l.first.setTo(l.predicate)
+                l.first.setTo(l.predicate)
+                assert(clause.isSatisfied)
             }
         }
     }
@@ -239,7 +240,7 @@ fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
     }
 
     //prepare the clauseset to be able to reuse the clauseset object, I cant just remove falsy variables
-    clauseSet.removeFalsyVariables() //TODO cant just remove falsy variables, if I want ot reuse the clauseSet to calculate a backbone
+    //clauseSet.removeFalsyVariables() //TODO cant just remove falsy variables, if I want ot reuse the clauseSet to calculate a backbone
     if (verbose) {
         println("~>"+clauseSet.toString())
     }
