@@ -401,30 +401,44 @@ fun timingTests(): Unit {
 }
 
 
-fun testQuickBackbone(bigFormulas:Boolean = true) {
-    var numTests:Int = 500
+fun testQuickBackbone(formulaSize:Int = 2) {
+    var numTests:Int = 15
     var numVars:Int
     var numClauses:Int
     var varStep:Int
-    if (bigFormulas)
-    {
-        numVars=40
-        numClauses=325
-        varStep=16
+    if (formulaSize == 3) {
+        numVars = 59
+        numClauses = 500
+        varStep = 23
+    } else if (formulaSize == 2) {
+        numVars = 40
+        numClauses = 325
+        varStep = 16
+    } else if (formulaSize == 1) {
+        numVars = 4
+        numClauses = 6
+        varStep = 3
     }
-    else
-    {
-        numVars=4
-        numClauses=6
-        varStep=3
+    else{
+        assert(false)
+        numVars = 1
+        numClauses = 1
+        varStep = 1
     }
 
 
-    val randy: Random = Random()
+    val randy = Random()
 
     var knownVars = makeVarIds(numVars)
     var numFails:Int = 0
     var runTests:Int = 0
+
+    var sumMsecKaiKueSlow:Int = 0
+    var sumMsecKaiKueFast:Int = 0
+    var sumMsecIntersect:Int = 0
+
+    var numKaiKueRuns:Int = 0
+    var numIntersectRuns:Int = 0
 
     for (_iter:Int in 1..numTests) {
         val code:String = makeBoolCode(randy,knownVars,numClauses,varStep)
@@ -450,6 +464,12 @@ fun testQuickBackbone(bigFormulas:Boolean = true) {
             val intersRuns = numCdclRuns
             val t6 = System.currentTimeMillis()
 
+            sumMsecKaiKueSlow += (t2-t1).toInt()
+            sumMsecKaiKueFast += (t4-t3).toInt()
+            sumMsecIntersect += (t6-t5).toInt()
+            numKaiKueRuns += kaiKueRuns
+            numIntersectRuns += intersRuns
+
             val failure:Boolean = isLiteralSetDifferent(inters.toList().sortedBy { it.variable.id },
                     kaiKue.toList().sortedBy { it.variable.id })
             if (failure) {
@@ -460,7 +480,7 @@ fun testQuickBackbone(bigFormulas:Boolean = true) {
 
             println("mSecs:" + (t2 - t1) + "   " + (t4 - t3) + "   " + (t6 - t5))
             println("Runs: " + kaiKueSlowRuns + "   " + kaiKueRuns + "   " + intersRuns)
-            println("numBB:" +  kaiKueSlow.size + "   " + kaiKue.size + "   " + inters.size + "   ")
+            println("numBB:" +  kaiKueSlow.size )
 
             println()
         }
@@ -471,4 +491,6 @@ fun testQuickBackbone(bigFormulas:Boolean = true) {
     println()
     println("run / failed")
     println(runTests.toString()+" / "+numFails)
+    println("mSecs: " + sumMsecKaiKueSlow + "   " + sumMsecKaiKueFast + "   " + sumMsecIntersect)
+    println("numRums: "+numKaiKueRuns+"   "+numIntersectRuns)
 }
