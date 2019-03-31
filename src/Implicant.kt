@@ -191,28 +191,29 @@ fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
                 }
 
             lit2clause.put(nuWatched,checkedClause)
-
+            assert(checkedClause.isSatisfied)
             return false
         } else
         {
             //literal is the last remaining
             //also remove the other reference, to not touch checkedclause again unnecessarily
             lit2clause.remove(checkedClause.getPrimeLiteral()!!,checkedClause)
+            assert(checkedClause.isSatisfied)
             return true
         }
     }
     //paper passes C and M, but C is never used and the relevant part of M is in the variables in the clauses in W
     fun impliedW(l:Literal,requiredLiterals:MutableSet<Literal>,literalToClause:WatchedLiteralToClause)
     {
-        if (verbose) {
-            println("w: "+l)
-        }
+        if (verbose) {println("w: "+l)}
         //prevent concurrentmodificationException by copying
         val occurences = literalToClause.get(l).toList()
-        for (clause in occurences) {
-            if (HDL_constr(clause, l, literalToClause)) {
-
-                if (requiredLiterals.contains(l)) {
+        for (clause in occurences)
+        {
+            if (HDL_constr(clause, l, literalToClause))
+            {
+                if (requiredLiterals.contains(l))
+                {
                     continue
                 }
                 var newPrimeLiteral:Literal = clause.getPrimeLiteral()!!
@@ -237,8 +238,8 @@ fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
         }
     }
 
-    //prepare the clauseset
-    clauseSet.removeFalsyVariables()
+    //prepare the clauseset to be able to reuse the clauseset object, I cant just remove falsy variables
+    clauseSet.removeFalsyVariables() //TODO cant just remove falsy variables, if I want ot reuse the clauseSet to calculate a backbone
     if (verbose) {
         println("~>"+clauseSet.toString())
     }

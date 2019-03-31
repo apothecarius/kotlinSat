@@ -169,10 +169,6 @@ class ClauseWatchedLiterals constructor(disjunction: Array<Literal>) : Clause(di
     fun getPrimeLiteral(): Literal? {
         assert(!watchedLiteralsForUnitVariables)
         if (this.watchedHead == this.watchedTail) {
-            if (this.literals.size > 1) {
-                assert(this.literals[this.watchedTail].becomesTrue())
-            }
-
             return this.literals[this.watchedTail]
         } else {
             return null

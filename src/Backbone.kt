@@ -139,32 +139,32 @@ fun getBackboneIntersections(cs: ClauseSetWatchedLiterals):Set<Literal> {
         return emptySet()
     }
 
-    //boil it down to the prime implicant //TODO get prime implicant reduction to work
-    //val firstPrimeImplicant:Set<Variable> = getPrimeImplicantWithWatchedLiterals(cs,firstTable).map { it.variable }.toSet()
-    val firstPrimeImplicant:Set<Variable> = getPrimeImplicant(cs).map { it.variable }.toSet()
+    //boil it down to the prime implicant
+    val firstPrimeImplicant:Set<Variable> = getPrimeImplicantWithWatchedLiterals(cs,firstTable).map { it.variable }.toSet()
+    //val firstPrimeImplicant:Set<Variable> = getPrimeImplicant(cs).map{it.variable}.toSet() //works with this line, because this one doesnt change the formula
 
     //mark all unset variables to not be in the backbone (make LinkedHashMap "candidates" with variables to setting, in order of
     // occurence in CdclTable
     //do not insert unset variables (arent in the prime implicant anyway)
     val candidates:LinkedHashMap<Variable,Boolean> = LinkedHashMap()
 
-    //firstTable.filter { getPrimeImplicantWithWatchedLiterals(cs,firstTable).map { it.variable }.
-    //        contains(it.affectedVariable) }.forEach {candidates.put(it.affectedVariable,!it.value)}
-    firstTable.filter { it.level != 0 }.forEach{candidates.put(it.affectedVariable,!it.value)}
+    firstTable.filter {it.level != 0 && firstPrimeImplicant.contains(it.affectedVariable) }.forEach {candidates.put(it.affectedVariable,!it.value)}
+    //firstTable.filter { it.level != 0 }.forEach{candidates.put(it.affectedVariable,!it.value)}
     //TODO appearantly works even if both lines are inactive (and candidates is initially empty) investigate why //happens, when the testcase wasnt interesting
 
 
     //need to extract BB vars from a table, if no candidates exist, then we should use the previous table
     var intersectedTable:CdclTable = firstTable
     var numKnownBackboneLiterals:Int = firstTable.countAxiomaticLiterals()
-
     while (candidates.isNotEmpty()) {
-
         //2. run the CDCL on the SAME formula (with learned clauses, but reset variable settings) and pass the candidates
         // from the previous run, but use inverse settings to be used for decisions
         cs.resetVars()
         intersectedTable = cdclSolve(cs, candidates)
         numCdclRuns++
+
+        //remove unset variables
+        candidates.entries.removeAll{it.key.isUnset}
 
         //remove unset variables from candidates and those with different setting than is noted
         for (cdclEntry: CdclTableEntry in intersectedTable) {
@@ -189,6 +189,7 @@ fun getBackboneIntersections(cs: ClauseSetWatchedLiterals):Set<Literal> {
         //if candidates is empty return everything in current CdclTable on level 0
         //else reiterate
     }
+    println("Took: "+numCdclRuns)
 
     return intersectedTable.filter { it.level == 0 }.map { Literal(it.affectedVariable,it.value) }.toSet()
 }

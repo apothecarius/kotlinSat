@@ -1,3 +1,4 @@
+import com.sun.org.apache.xpath.internal.operations.Bool
 import java.util.*
 import java.util.stream.IntStream
 
@@ -87,7 +88,7 @@ fun testSolvers(numTests:Int,numVars:Int,numClauses:Int,varStep:Int): Boolean {
 
 fun makeVarIds(numVars: Int): List<Char> {
     var retu = mutableListOf<Char>()
-    for (i: Int in 65..65 + numVars) {
+    for (i: Int in 64..64 + numVars) {
         retu.add(i.toChar())
     }
     return retu
@@ -122,9 +123,9 @@ fun makeBoolCode(randy: Random, knownVars:List<Char>,numClauses:Int,varStep:Int)
 
 fun testImplicant() {
     var numTests=500
-    var numVars=4
-    var numClauses=4
-    var varStep=3
+    var numVars=40
+    var numClauses=325
+    var varStep=16
 
     val randy: Random = Random()
 
@@ -133,6 +134,7 @@ fun testImplicant() {
         knownVars.add(i.toChar())
     }
     var numFails:Int = 0
+    var runTests:Int = 0
     for (_iter:Int in 1..numTests) {
         var boolCode: String = makeBoolCode(randy, knownVars, numClauses, varStep)
         if (verbose) {
@@ -145,6 +147,8 @@ fun testImplicant() {
             //cant find implicant of unsolvable formula
             continue
         }
+
+        runTests++
 
         val basePI : List<Literal> = getPrimeImplicant(cs).sortedBy { it.first.id }
 
@@ -182,10 +186,14 @@ fun testImplicant() {
             println()
             numFails++
         }
+        else if (verbose) {
+            println(boolCode + " => "+cs.toString())
+            println(basePI)
+        }
 
         //TODO ausgabe sortieren und dann automatisch verlgeichen
     }
-    println("Fails: "+numFails+"/"+numTests)
+    println("Fails: "+numFails+"/"+runTests)
 }
 
 
@@ -392,13 +400,23 @@ fun timingTests(): Unit {
 
 
 fun testQuickBackbone() {
-    var i = 10
-    while(i >= 1) {
-        val code:String = makeBoolCode(50,100,30)
+    var numTests=10
+    var numVars=4
+    var numClauses=6
+    var varStep=3
 
-        if (cdclSAT(ClauseSetWatchedLiterals(code))) {
-            i--
-            println(".")
+    val randy: Random = Random()
+
+    var knownVars = makeVarIds(numVars)
+    var numFails:Int = 0
+    var runTests:Int = 0
+
+    for (_iter:Int in 1..numTests) {
+        val code:String = makeBoolCode(randy,knownVars,numClauses,varStep)
+
+        if (cdclSAT(ClauseSetWatchedLiterals(code)))
+        {
+
             val tx1 = System.currentTimeMillis()
             val estim: Set<Literal> = getCdclDefaultIntersection(ClauseSetWatchedLiterals(code))
             val tx2 = System.currentTimeMillis()
@@ -412,24 +430,24 @@ fun testQuickBackbone() {
             val kaiKue: Set<Literal> = getBackboneKaiKue(ClauseSetWatchedLiterals(code))
             val kaiKueRuns = numCdclRuns
             val t4 = System.currentTimeMillis()
-
             val t5 = System.currentTimeMillis()
             val inters: Set<Literal> = getBackboneIntersections(ClauseSetWatchedLiterals(code))
             val intersRuns = numCdclRuns
             val t6 = System.currentTimeMillis()
 
-
-            println("" + (t2 - t1) + "   " + (t4 - t3) + "   " + (t6 - t5))
-            println("" + kaiKueSlowRuns + "   " + kaiKueRuns + "   " + intersRuns)
-            println("   " + estim.size + "   " + kaiKueSlow.size + "   " + kaiKue.size + "   " + inters.size + "   ")
-            /*if (!(kaiKue.toString() == inters.toString())) {
-                println("Fail: ")
+            val failure:Boolean = kaiKue.size != inters.size
+            if (failure) {
                 println(code)
-                println(kaiKue)
                 println(inters)
-            }*/
+            }
 
-        } else {
+            println("mSecs:" + (t2 - t1) + "   " + (t4 - t3) + "   " + (t6 - t5))
+            println("Runs: " + kaiKueSlowRuns + "   " + kaiKueRuns + "   " + intersRuns)
+            println("numBB:" + estim.size + "   " + kaiKueSlow.size + "   " + kaiKue.size + "   " + inters.size + "   ")
+
+            println()
+        }
+        else {
             print(",")
         }
        // println("skipping")
