@@ -1,4 +1,3 @@
-import javax.lang.model.element.VariableElement
 
 typealias VariableIdentifier = String
 enum class VariableSetting {True,False,Unset}
@@ -11,6 +10,16 @@ fun VariableSetting.getOpposite():VariableSetting
     }
 
 
+}
+
+fun makeVarIds(numVars: Int): List<VariableIdentifier> {
+    var retu = mutableListOf<VariableIdentifier>()
+    for (i: Int in 64..64 + numVars) {
+        var ic:VariableIdentifier = i.toString()
+        assert(ic.isNotBlank())
+        retu.add(ic)
+    }
+    return retu
 }
 
 class Variable constructor(c: VariableIdentifier)
@@ -84,7 +93,7 @@ class Variable constructor(c: VariableIdentifier)
 
     override fun toString():String
     {
-        return this.id
+        return this.id.toString()
     }
 
     override fun equals(other: Any?): Boolean {

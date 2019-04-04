@@ -11,7 +11,7 @@ fun testSolvers(numTests:Int,numVars:Int,numClauses:Int,varStep:Int): Boolean {
 
     val randy: Random = Random()
 
-    val knownVars:List<Char> = makeVarIds(numVars)
+    val knownVars:List<VariableIdentifier> = makeVarIds(numVars)
 
     for (_iter:Int in 1..numTests) {
         var boolCode:String = makeBoolCode(randy,knownVars,numClauses, varStep)
@@ -86,18 +86,12 @@ fun testSolvers(numTests:Int,numVars:Int,numClauses:Int,varStep:Int): Boolean {
     return true
 }
 
-fun makeVarIds(numVars: Int): List<Char> {
-    var retu = mutableListOf<Char>()
-    for (i: Int in 64..64 + numVars) {
-        retu.add(i.toChar())
-    }
-    return retu
-}
+
 
 fun makeBoolCode(numVars: Int, numClauses: Int, varStep: Int):String {
     return makeBoolCode(Random(System.currentTimeMillis()), makeVarIds(numVars), numClauses, varStep)
 }
-fun makeBoolCode(randy: Random, knownVars:List<Char>,numClauses:Int,varStep:Int): String {
+fun makeBoolCode(randy: Random, knownVars:List<VariableIdentifier>,numClauses:Int,varStep:Int): String {
     var clauseList:MutableList<String> = mutableListOf()
     for (clauseIter: Int in 1..numClauses) {
         var varList:MutableList<String> = mutableListOf()
@@ -110,7 +104,7 @@ fun makeBoolCode(randy: Random, knownVars:List<Char>,numClauses:Int,varStep:Int)
                 var s:String =
                 if (randy.nextBoolean()) "!" else ""
 
-                s += knownVars.get(varsIter)
+                s += knownVars[varsIter]
                 varList.add(s)
             }
         }
@@ -151,10 +145,7 @@ fun testImplicant() {
 
     val randy: Random = Random()
 
-    var knownVars = mutableListOf<Char>()
-    for (i: Int in 65..65 + numVars) {
-        knownVars.add(i.toChar())
-    }
+    var knownVars = makeVarIds(numVars)
     var numFails:Int = 0
     var runTests:Int = 0
     for (_iter:Int in 1..numTests) {
@@ -394,22 +385,18 @@ fun timingTests(): Unit {
     println(cswl.isFulfilled)
 
 
-
-    /*println(erg1.filter { it.reason is Reason.InUnitClause }.size)
-    println(erg2.filter { it.reason is Reason.InUnitClause }.size)
-    erg1.print()*/
 }
 
 
-fun testQuickBackbone(formulaSize:Int = 2) {
-    var numTests:Int = 15
+fun testQuickBackbone(formulaSize:Int = 3) {
+    var numTests:Int = 10
     var numVars:Int
     var numClauses:Int
     var varStep:Int
     if (formulaSize == 3) {
-        numVars = 59
-        numClauses = 500
-        varStep = 23
+        numVars = 200
+        numClauses = 1250
+        varStep = 80
     } else if (formulaSize == 2) {
         numVars = 40
         numClauses = 325
