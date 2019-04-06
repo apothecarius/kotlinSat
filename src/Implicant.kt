@@ -205,7 +205,7 @@ fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
     //paper passes C and M, but C is never used and the relevant part of M is in the variables in the clauses in W
     fun impliedW(l:Literal,requiredLiterals:MutableSet<Literal>,literalToClause:WatchedLiteralToClause)
     {
-        if (verbose) {println("w: "+l)}
+        if (verbose) {println("w: $l")}
         //prevent concurrentmodificationException by copying
         val occurences = literalToClause.get(l).toList()
         for (clause in occurences)

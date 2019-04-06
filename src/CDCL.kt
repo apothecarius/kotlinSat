@@ -122,10 +122,10 @@ fun cdclSolve(s:String) : Unit {
 //fun cdclSolve(s: String) = cdclSolve(ClauseSetWatchedLiterals(s))
 fun cdclSAT(s:String) = cdclSAT(ClauseSetWatchedLiterals(s))
 
-fun cdclSolve(clauseSet: ClauseSet,variablePriorityQueue:LinkedHashMap<Variable,Boolean>? = null): CdclTable {
+fun cdclSolve(clauseSet: ClauseSet,variablePriorityQueue:Map<Variable,Boolean>? = null): CdclTable {
     var level:Int = 0
-    val table : CdclTable = mutableListOf<CdclTableEntry>()
-    val candidateIterator:MutableIterator<MutableMap.MutableEntry<Variable, Boolean>>? = variablePriorityQueue?.iterator()
+    val table : CdclTable = mutableListOf()
+    val candidateIterator:Iterator<Map.Entry<Variable, Boolean>>? = variablePriorityQueue?.iterator()
 
     while (true) {
         val units = clauseSet.getAndSetUnitsWithReason()
@@ -166,7 +166,7 @@ fun cdclSolve(clauseSet: ClauseSet,variablePriorityQueue:LinkedHashMap<Variable,
             // prefixed variables which are set by decision are regularly extracted, until
             // resolvent is empty
             if (verbose) {
-                println("Conflict in "+emptyClause+" , doing backtrack")
+                println("Conflict in $emptyClause , doing backtrack")
                 table.print()
             }
             var resolvent:Resolvent = makeResolvent(emptyClause)
@@ -200,7 +200,7 @@ fun cdclSolve(clauseSet: ClauseSet,variablePriorityQueue:LinkedHashMap<Variable,
                         else -> null //syntactically necessary
                     }!!
             if (verbose) {
-                println("Learning: "+resolventClause)
+                println("Learning: $resolventClause")
             }
             clauseSet.addResolvent(resolventClause)
             level--

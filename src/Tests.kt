@@ -388,8 +388,8 @@ fun timingTests(): Unit {
 }
 
 
-fun testQuickBackbone(formulaSize:Int = 3) {
-    var numTests:Int = 10
+fun testQuickBackbone(formulaSize:Int = 2) {
+    var numTests:Int = 100
     var numVars:Int
     var numClauses:Int
     var varStep:Int
@@ -466,7 +466,7 @@ fun testQuickBackbone(formulaSize:Int = 3) {
             }
 
             println("mSecs:" + (t2 - t1) + "   " + (t4 - t3) + "   " + (t6 - t5))
-            println("Runs: " + kaiKueSlowRuns + "   " + kaiKueRuns + "   " + intersRuns)
+            println("Runs: $kaiKueSlowRuns   $kaiKueRuns   $intersRuns")
             println("numBB:" +  kaiKueSlow.size )
 
             println()
@@ -477,7 +477,7 @@ fun testQuickBackbone(formulaSize:Int = 3) {
 
     println()
     println("run / failed")
-    println(runTests.toString()+" / "+numFails)
-    println("mSecs: " + sumMsecKaiKueSlow + "   " + sumMsecKaiKueFast + "   " + sumMsecIntersect)
-    println("numRums: "+numKaiKueRuns+"   "+numIntersectRuns)
+    println("$runTests / $numFails")
+    println("mSecs: $sumMsecKaiKueSlow   $sumMsecKaiKueFast   $sumMsecIntersect")
+    println("numRums: $numKaiKueRuns   $numIntersectRuns")
 }

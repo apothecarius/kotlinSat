@@ -32,7 +32,7 @@ open class Clause constructor(disjunction : Array<Literal>)
 {
 //    private var vars : Array<Variable> = disjunction.map { a -> a.first }.toTypedArray();
 //    private var predicates: Array<Boolean> = disjunction.map{ a -> a.second}.toTypedArray();
-    var literals : Array<Literal> = disjunction
+    var literals : Array<Literal> = disjunction.sortedBy { it.variable.id }.toTypedArray()
 
     constructor(c: Clause) : this(c.literals.map { it:Literal -> Literal(Variable(it.variable),it.predicate) }.toTypedArray())
 

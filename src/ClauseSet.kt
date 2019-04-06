@@ -20,8 +20,6 @@ open class ClauseSet(c:Array<Clause>)
             this(cs.split("&").
                     map { c:String -> Clause(c,vs) }.toTypedArray())
 
-    constructor(cs:ClauseSet) : this(cs.clauses.map { it -> Clause(it) }.toTypedArray())
-
     val isFulfilled : Boolean
         get() = clauses.all { a:Clause -> a.isSatisfied }
     val isEmpty : Boolean
