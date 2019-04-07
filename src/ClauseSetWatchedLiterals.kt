@@ -27,10 +27,10 @@ class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.ma
 
 
     private constructor(cs:String,vs:VariableSet)  :
-    this(cs.split("&").
-            map { c:String -> ClauseWatchedLiterals(c,vs) }.toTypedArray())
+        this(cs.split("&").
+                map { c:String -> ClauseWatchedLiterals(c,vs) }.toTypedArray())
 
-    private val clausesWL:List<ClauseWatchedLiterals>
+    val clausesWL:List<ClauseWatchedLiterals>
     get() = this.getClauses() as List<ClauseWatchedLiterals>
 
     //TODO occurences pro Literal anstatt Variable
@@ -82,7 +82,7 @@ class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.ma
     override fun addResolvent(c: Clause) {
         super.addResolvent(c)
         val c = c as ClauseWatchedLiterals
-        for (l: Variable in c.literals.map { it ->it.variable }) {
+        for (l: Variable in c.literals.map { it.variable }) {
             //the entry must exist, because the variable is known
             this.occurences[l]!!.add(c)
         }

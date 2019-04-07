@@ -2,6 +2,22 @@
 
 const val verbose:Boolean = false
 
+sealed class Either<out A, out B> {
+    class Left<A>(val value: A): Either<A, Nothing>()
+    class Right<B>(val value: B): Either<Nothing, B>()
+
+    override fun toString(): String {
+        return if (this is Left) {
+            this.value.toString()
+        } else if (this is Right) {
+            this.value.toString()
+        } else {
+            //cant be
+            assert(false)
+            ""
+        }
+    }
+}
 
 enum class WatchedLiteralIterationScheme {
     ToMiddle, SideBySide
@@ -12,6 +28,7 @@ val activeWLIterationScheme:WatchedLiteralIterationScheme = WatchedLiteralIterat
 
 fun main(args:Array<String>)
 {
+
     //clauseset where primeImplicatWithWatchedLiterals fails
 
     //backbone computation works well with intersections, but explodes with Kaiser+Kuechlin
@@ -21,11 +38,37 @@ fun main(args:Array<String>)
     //val code = "C|D & C & B|C|!E & !B|D|!E"
     //val code = "!D & C|!D & !B|C|E & B|C|!E"
     //val code = "B|!D & !C|E & !C|E & B|D|!E"
-    val code = "!B|!C|D|F & D|!F & B|!D & D|F & C|E & B|E & B|!C|F"
+    //val code = "!B|!C|D|F & D|!F & B|!D & D|F & C|E & B|E & B|!C|F"
     //val code = "C|D|E & !C|D|E & B|D|E & !B|!E"
-    //val code = "!B|D & !B|C|E & C & B|D"
     //val code = "C|B & !A & !C & C|!A|!B & C|!B"
     //val code = "A|!D & A|D & !B|D & !C|!D & A|C & !C"
+
+    //val code = "C|D & C|D|E & C & A"
+    val code = "!B|D & !B|C|E & C & B|D"
+
+    val cs = ClauseSetWatchedLiterals(code)
+    val subsTree:SubsumptionTree = mutableMapOf()
+
+    println(subsTree.storeClause(cs.clausesWL[0]))
+    println(subsTree.storeClause(cs.clausesWL[1]))
+    println(subsTree.storeClause(cs.clausesWL[2]))
+    println(subsTree.storeClause(cs.clausesWL[3]))
+
+
+    /*println(subsTree.storeClause(cs.clausesWL[2])) //C, subsumes [1]
+    println(subsTree.storeClause(cs.clausesWL[1])) //!B|C|E, shouldnt stay
+    println(subsTree.storeClause(cs.clausesWL[3])) //B|D*/
+    /*println(subsTree.storeClause(cs.clausesWL[3]))
+    println(subsTree.storeClause(cs.clausesWL[1]))
+    println(subsTree.storeClause(cs.clausesWL[0]))
+    println(subsTree.storeClause(cs.clausesWL[2]))*/
+
+
+
+    println()
+    subsTree.print()
+
+
 
 
     //println(ClauseSetWatchedLiterals(code))
@@ -59,7 +102,7 @@ fun main(args:Array<String>)
     //val klaus = ClauseSetWatchedLiterals("D|!G|!J & D|!I|J & F|!J|!K & F|I & !F|!J & B|!F|!I & F|!J & D|!G & !F|G & !F|!G & !F|!J & !D|!F|!G|!K & !F|!G|K")
     //testImplicant()
 
-     testQuickBackbone()
+     //testQuickBackbone()
 
     //println("\n"+getBackboneIntersections(klaus))
 /*
