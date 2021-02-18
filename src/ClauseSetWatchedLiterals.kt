@@ -1,4 +1,3 @@
-import kotlin.coroutines.experimental.buildSequence
 
 /**
  * This class extends ordinary clauses to have watched literals, which
@@ -88,7 +87,7 @@ class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.ma
         }
     }
 
-    override fun getPresentVariables(): Sequence<Variable> = buildSequence {
+    override fun getPresentVariables(): Sequence<Variable> = sequence {
         for (v: Variable in occurences.keys) {
             yield(v)
         }

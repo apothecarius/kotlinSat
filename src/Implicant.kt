@@ -74,14 +74,15 @@ fun isImplicant(clauseSet: ClauseSet):Boolean {
 
 
 /**
- * Returns a variable which hinders this partially set clauseSet to be a
+ * Returns a variable which hinders this partially set clauseSet to be a prime implicant
  */
-fun getNonPrimeImplicantVariable(clauseSet: ClauseSet): Variable? {
-    //quick check
+fun getNonPrimeImplicantVariable(clauseSet: ClauseSet): Either<Variable?,Unit> {
+    //quick check, unsatisfiable or unsatisfied formulas return nothing
     if (clauseSet.isEmpty) {
-        return null
+        return Either.Right(Unit)
     } else if (!clauseSet.isFulfilled) {
-        return null
+        //must be satisfied
+        return Either.Right(Unit)
     }
     //if no set variable can be made unset without the clauseSet not being implicant
     // anymore, then this would not be primeImplicant
@@ -94,19 +95,23 @@ fun getNonPrimeImplicantVariable(clauseSet: ClauseSet): Variable? {
             val isImplWithoutV = isImplicant(clauseSet)
             v.setTo(prevSetting)
             if (isImplWithoutV) { //can be implicant without v, so is not primeImplicant
-                return v
+                return Either.Left(v)
             }
         }
     }
-    return null
+    return Either.Left(null)
 }
 
 /**
  * @return True, if the (partial) setting of the variables is an implicant, and
  * no variable can be set to Unset without loosing the implicant condition
  */
-fun isPrimeImplicant(clauseSet: ClauseSet): Boolean =
-        (getNonPrimeImplicantVariable(clauseSet) == null)
+fun isPrimeImplicant(clauseSet: ClauseSet): Boolean=
+     getNonPrimeImplicantVariable(clauseSet).let{
+        it is Either.Left && it.value == null
+    }
+
+
 
 
 /**
@@ -129,7 +134,12 @@ fun getPrimeImplicant(clauseSet: ClauseSet):Set<Literal> {
 
 
     do{
-        val nonPrime:Variable = getNonPrimeImplicantVariable(clauseSet)?:break
+        val nonPrime:Variable = getNonPrimeImplicantVariable(clauseSet).let {
+            if(it is Either.Left && it.value != null)
+                it.value
+            else null
+        } ?: break
+
         nonPrime.unset()
         if(clauseSet is ClauseSetWatchedLiterals){
             clauseSet.updateWatchedLiterals(nonPrime)

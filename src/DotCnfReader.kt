@@ -1,8 +1,7 @@
 import java.io.File
 import kotlin.math.absoluteValue
-import kotlin.math.sign
-import kotlin.test.assert
 
+fun readCnf(file:String) : ClauseSetWatchedLiterals = readCnf(File(file))
 fun readCnf(file:File) : ClauseSetWatchedLiterals
 {
     val reader = file.bufferedReader();
@@ -37,7 +36,7 @@ fun readCnf(file:File) : ClauseSetWatchedLiterals
         else
         {
             assert(isSpecified)
-            val splits = line.split(" ")
+            val splits = line.split(" ").filter { it.isNotEmpty() && it.all { it != ' ' } }
             assert(splits.count() >= 2)
             assert(splits[splits.count()-1] == "0")
 

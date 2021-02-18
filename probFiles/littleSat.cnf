@@ -1,0 +1,9 @@
+c example
+c note that the last clause is usually discarded immediately because it gets subsumed by the axiomatic one
+c Backbone is {1}
+p cnf 4 5
+-1 -4 -3 0
+1  4 0
+1 0
+-4 3 2 0
+1 -2 -3 -4 0

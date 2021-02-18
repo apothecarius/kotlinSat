@@ -1,4 +1,3 @@
-import kotlin.coroutines.experimental.buildSequence
 
 /**
  * A clauseset is the conjunction of multiple clauses
@@ -36,10 +35,11 @@ open class ClauseSet(c:Array<Clause>)
         this.clauses.add(c)
     }
 
-    open fun getPresentVariables(): Sequence<Variable> = buildSequence {
+    open fun getPresentVariables(): Sequence<Variable> = sequence {
         //the variables that were already returned
         val metVars:MutableSet<Variable> = mutableSetOf()
-        for (c: Clause in clauses) {
+        for (c: Clause in clauses)
+        {
             for(v:Variable in c.literals.map { it -> it.first })
                 if (metVars.contains(v)) {
                     continue
@@ -48,12 +48,6 @@ open class ClauseSet(c:Array<Clause>)
                     yield(v)
                 }
         }
-    }
-
-    fun copyClauses(): MutableList<Clause> {
-        var retu = mutableListOf<Clause>()
-        retu.addAll(this.clauses)
-        return retu
     }
 
 
@@ -105,19 +99,6 @@ open class ClauseSet(c:Array<Clause>)
         return this.clauses.find { c:Clause -> c.isEmpty }
     }
 
-    /**
-     * Sets any remaining variable to the passed parameter (defaulting to true)
-     * This function requires the boolean formula to be fulfilled already, or it
-     * will crash
-     */
-    fun fillModel(setting:Boolean = true) {
-        assert(this.isFulfilled)
-        while (true) {
-            var freeVar:Variable = this.getAnyFreeVariable() ?: break
-            freeVar.setTo(setting)
-        }
-    }
-
     open fun resetVars(){
         this.resetVars(this.getPresentVariables().toList())
     }
@@ -138,7 +119,7 @@ open class ClauseSet(c:Array<Clause>)
 
     override fun toString():String
     {
-        return this.clauses.map { it.toString() }.joinToString(separator=" & ")
+        return this.clauses.joinToString(separator = " & ") { it.toString() }
     }
 
     fun printVarSettings(): Unit {
