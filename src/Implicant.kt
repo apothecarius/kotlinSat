@@ -122,7 +122,8 @@ fun isPrimeImplicant(clauseSet: ClauseSet): Boolean=
  * seems to make problems in this case when the literals are changed (since it
  * affects the recognition of unfulfilled clauses)
  */
-fun getPrimeImplicant(clauseSet: ClauseSet):Set<Literal> {
+fun getPrimeImplicant(clauseSet: ClauseSet):Set<Literal>
+{
     if(clauseSet.isFresh)
         cdclSAT(clauseSet)
     assert(clauseSet.isFulfilled)
@@ -159,7 +160,7 @@ fun getPrimeImplicant(clauseSet: ClauseSet):Set<Literal> {
     return retu
 }
 
-fun  getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals) =
+fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals) =
         getPrimeImplicantWithWatchedLiterals(clauseSet,cdclSolve(clauseSet))
 fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
                                          table:CdclTable):Set<Literal>

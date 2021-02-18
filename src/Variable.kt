@@ -22,38 +22,52 @@ fun makeVarIds(numVars: Int): List<VariableIdentifier> {
     return retu
 }
 
-class Variable constructor(c: VariableIdentifier)
-{
-    constructor(v: Variable) : this(v.id)
-    {
+class Variable constructor(c: VariableIdentifier) : Comparable<Variable> {
+    constructor(v: Variable) : this(v.id) {
         this.setTo(v.setting)
     }
 
-    var id :VariableIdentifier = c
-    init{
+
+    /**
+     * Increases when this variable is involved with a conflict and decreases over time
+     * Is used to determine which variable should be assigned to
+     */
+    var activity: Float = 0f
+
+    var id: VariableIdentifier = c
+
+    init {
         assert(id.isNotBlank())
     }
-    var setting : VariableSetting = VariableSetting.Unset
+
+    var setting: VariableSetting = VariableSetting.Unset
+
+    /**
+     * Stores to previous actual assignment. This way subsequent assignments can do the opposite
+     * TODO initialize to the least occuring phase in the formula, so that the first assignment is optimal
+     */
+    var previousSetting: Boolean = false
 
     /**
      * Sets the variables state (false,true,unset)
      * Note that if you use watched Literals, then you need to update
      * them in all clauseSets that use this variable
      */
-    fun setTo(s:VariableSetting)
-    {
+    fun setTo(s: VariableSetting) {
         this.setting = s
     }
+
     /**
      * Sets the variables state (false,true)
      * Note that if you use watched Literals, then you need to update
      * them in all clauseSets that use this variable
      */
     fun setTo(s: Boolean) {
-        this.setting = when (s) {
+        this.setting = (when (s) {
             true -> VariableSetting.True
             false -> VariableSetting.False
-        }
+        })
+        this.previousSetting = s
     }
 
     /**
@@ -64,35 +78,37 @@ class Variable constructor(c: VariableIdentifier)
     fun unset() {
         this.setting = VariableSetting.Unset
     }
-    val boolSetting :Boolean? get() =
-        when(this.setting)
-        {
-            VariableSetting.True -> true
-            VariableSetting.False -> false
-            VariableSetting.Unset -> null
-        }
+
+    val boolSetting: Boolean?
+        get() =
+            when (this.setting) {
+                VariableSetting.True -> true
+                VariableSetting.False -> false
+                VariableSetting.Unset -> null
+            }
 
     /**
      * if predicate is false, then the variables setting is interpreted as negated
      * if the variable is not set then false is returned
      */
-    fun isTrueWith(predicate:Boolean):Boolean =
-        when (this.setting) {
-            VariableSetting.Unset -> false
-            VariableSetting.True -> predicate
-            VariableSetting.False -> !predicate
-        }
-    fun isFalseWith(predicate:Boolean):Boolean =
-        when(this.setting){
-            VariableSetting.Unset -> false
-            VariableSetting.True -> ! predicate
-            VariableSetting.False -> predicate
-        }
-    val isUnset:Boolean
+    fun isTrueWith(predicate: Boolean): Boolean =
+            when (this.setting) {
+                VariableSetting.Unset -> false
+                VariableSetting.True -> predicate
+                VariableSetting.False -> !predicate
+            }
+
+    fun isFalseWith(predicate: Boolean): Boolean =
+            when (this.setting) {
+                VariableSetting.Unset -> false
+                VariableSetting.True -> !predicate
+                VariableSetting.False -> predicate
+            }
+
+    val isUnset: Boolean
         get() = this.setting == VariableSetting.Unset
 
-    override fun toString():String
-    {
+    override fun toString(): String {
         return this.id.toString()
     }
 
@@ -100,8 +116,17 @@ class Variable constructor(c: VariableIdentifier)
         if (other is Variable) {
             return this.id.equals(other.id) && this.setting.equals(other.setting)
         } else
-        return super.equals(other)
+            return super.equals(other)
     }
+
+    override fun compareTo(other: Variable): Int =
+            (other.activity - this.activity).let {
+                when {
+                    it > 0 -> -1
+                    it < 0 -> 1
+                    else -> 0
+                }
+            }
 }
 
 class VariableSet

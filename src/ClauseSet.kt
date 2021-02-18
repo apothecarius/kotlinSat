@@ -137,12 +137,6 @@ open class ClauseSet(c:Array<Clause>)
         println()
     }
 
-    fun printClauses(): Unit {
-        for (c: Clause in this.clauses) {
-            println(c)
-        }
-    }
-
     fun findVariable(i: VariableIdentifier): Variable? {
         return this.getPresentVariables().find { it.id == i }
     }
@@ -174,16 +168,8 @@ open class ClauseSet(c:Array<Clause>)
                         {acc: Set<Clause>, mutableSet: Set<Clause> -> acc.union(mutableSet) }).toMutableSet()
                 associatedClauses.add(c)
                 retu.add(FormulaGroup(occuringVars.toMutableSet(), associatedClauses.toMutableList()))
-
-                //val toAdd:FormulaGroup = FormulaGroup(groups.map{it.first}.)
-
-
-
             }
-
-
         }
-
         return retu.map { it -> it.second }
     }
 }

@@ -11,13 +11,16 @@ import kotlin.test.assertEquals
  */
 
 class Tests{
+    /**
+     * Verifies that all solvers agree on whether they can find a model for any formula or not
+     */
     @Test
     fun testSolvers() = testSolvers(numTests = 100,numVars = 25,numClauses= 120,varStep = 10)
 
     fun testSolvers(numTests:Int,numVars:Int,numClauses:Int,varStep:Int) {
         assert(numVars < 26)
 
-        val randy: Random = Random()
+        val randy:Random = Random()
 
         val knownVars:List<VariableIdentifier> = makeVarIds(numVars)
 
@@ -58,17 +61,11 @@ class Tests{
                 arrayOf(piNonWl, piWithWl).forEach { it.forEach{lit:Literal -> lit.first.setTo(lit.second)} }
                 //verify, that result is indeed primeImplicant
                 assertFalse("ERROR: Prematurely returned PrimeImplicant",
-                        clWithPI.any { getNonPrimeImplicantVariable(it).let{it is Either.Left && it.value != null}})
+                        clWithPI.any { getNonPrimeImplicantVariable(it).let{freeVar ->
+                            freeVar is Either.Left && freeVar.value != null}})
             }
-
-            if (verbose) {
-                println()
-                println()
-            }
-
         }
     }
-
 
 
     fun makeBoolCode(numVars: Int, numClauses: Int, varStep: Int):String {
@@ -335,15 +332,12 @@ class Tests{
             println(s)
         }
 
-
         println(cod)
         println(end1 - start1)
         println(end2 - start2)
 
         println(cs.isFulfilled)
         println(cswl.isFulfilled)
-
-
     }
 
     @Test
@@ -360,6 +354,17 @@ class Tests{
         val bb2 = ClauseSetWatchedLiterals("!a & a|b")
         val axiom = cdclSolve(bb2).getAxiomaticEntries()
         assertEquals(axiom.count(),2)
+    }
+
+    @Test
+    fun testToStringReflexivity()
+    {
+        val code:String = "a|b & !b|c & c|!d"
+        val formula = ClauseSet(code)
+        val formulaWl = ClauseSetWatchedLiterals(code)
+
+        assertEquals(code,formula.toString())
+        assertEquals(code,formulaWl.toString())
     }
 
 

@@ -92,19 +92,19 @@ fun Resolvent.getAnyVariable(): Variable? =
         }
 
 
-open class Reason private constructor ()
+sealed class Reason private constructor ()
 {
     class InUnitClause(c:Clause):Reason()
     {
         val reasonClause:Clause = c
     }
-    class Decision:Reason()
+
+    object Decision : Reason()
 
     override fun toString(): String =
             when (this) {
                 is InUnitClause -> "InUnitClause ("+this.reasonClause.toString()+")"
                 is Decision -> "Decision"
-                else -> "fail"
             }
 }
 
@@ -226,14 +226,18 @@ fun cdclSolve(clauseSet: ClauseSet,variablePriorityQueue:Map<Variable,Boolean>? 
 
             //special for candidate/intersection backbone calculation
             //if candidates are present
-            while (candidateIterator != null && explicitelySetVar == null && candidateIterator.hasNext()) {
-                val curCandidate = candidateIterator.next()
-                if (!curCandidate.key.isUnset) {
-                    continue
-                } else {
-                    explicitelySetVar = curCandidate.key
-                    //note that
-                    explicitelySetVar.setTo(curCandidate.value)
+            if (candidateIterator != null)
+            {
+                while (explicitelySetVar == null && candidateIterator.hasNext())
+                {
+                    val curCandidate = candidateIterator.next()
+                    if (!curCandidate.key.isUnset) {
+                        continue
+                    } else {
+                        explicitelySetVar = curCandidate.key
+                        //note that
+                        explicitelySetVar.setTo(curCandidate.value)
+                    }
                 }
             }
 
@@ -249,7 +253,7 @@ fun cdclSolve(clauseSet: ClauseSet,variablePriorityQueue:Map<Variable,Boolean>? 
             if (clauseSet is ClauseSetWatchedLiterals) {
                 clauseSet.updateWatchedLiterals(explicitelySetVar)
             }
-            table.add(CdclTableEntry(level,explicitelySetVar,explicitelySetVar.boolSetting!!,Reason.Decision()))
+            table.add(CdclTableEntry(level,explicitelySetVar,explicitelySetVar.boolSetting!!,Reason.Decision))
             if (clauseSet is ClauseSetWatchedLiterals && activeWLIterationScheme == WatchedLiteralIterationScheme.ToMiddle) {
                 clauseSet.resetAllWatchedLiterals()
             }
