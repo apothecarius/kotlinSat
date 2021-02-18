@@ -8,10 +8,10 @@ class Heap<T : Comparable<T>>
 {
     class BinaryTree<T: Comparable<T>>(parParam:BinaryTree<T>?, contentParam:T?)
     {
-        var content:T? = contentParam
-        var left:BinaryTree<T>? = null
-        var right:BinaryTree<T>? = null
-        var parent:BinaryTree<T>? = parParam
+        private var content:T? = contentParam
+        private var left:BinaryTree<T>? = null
+        private var right:BinaryTree<T>? = null
+        private var parent:BinaryTree<T>? = parParam
 
         fun size():Int = (if(this.content != null) 1 else 0) +
                 (this.left?.size() ?: 0) +
@@ -48,7 +48,6 @@ class Heap<T : Comparable<T>>
                     this.right!!.add(e)
                     this.right!!.rebalanceUp()
                 }
-
             }
         }
 
@@ -79,13 +78,13 @@ class Heap<T : Comparable<T>>
         fun pop():T?
         {
             val replacement:T? = this.popLowest()
-            if (this.content == null) {
-                return replacement
+            return if (this.content == null) {
+                replacement
             }else{
                 val retu:T = this.content!!
                 this.content = replacement
                 this.rebalanceDown()
-                return retu
+                retu
             }
         }
 
@@ -131,8 +130,33 @@ class Heap<T : Comparable<T>>
                 this.parent!!.rebalanceUp()
             }
         }
+
+        fun reorder() {
+            if (this.content == null) {
+                return
+            }
+            if(this.left == null && this.right == null)
+            {
+                this.rebalanceUp()
+            }
+            else{
+                this.left?.reorder()
+                this.right?.reorder()
+            }
+
+        }
     }
 
+    fun reorder()
+    {
+        //TODO take the element that changed as parameter, search for it and rebalance from there
+        // (probably up and down should be enough)
+        if(this.tree != null)
+        {
+            this.tree!!.reorder();
+        }
+
+    }
 
     private var tree:BinaryTree<T>? = null
 
@@ -141,10 +165,10 @@ class Heap<T : Comparable<T>>
             this.tree!!.size()
         else 0
 
-    fun add(e:T):Unit
+    fun add(e:T)
     {
         if (this.tree == null) {
-            this.tree = BinaryTree<T>(null,e)
+            this.tree = BinaryTree(null,e)
         } else {
             this.tree!!.add(e)
         }
@@ -177,6 +201,7 @@ class HeapTests{
         assertEquals(0,h.size())
     }
 
+
     @Test
     fun insertionOrderTest()
     {
@@ -202,16 +227,7 @@ class HeapTests{
             h.add(v)
         }
 
-        //expected that activity monotonically rises
-        var prevActivity: Int = Int.MAX_VALUE
-        while (h.size() != 0)
-        {
-            val v = h.pop()!!
-            val curActivity = v
-            assertTrue(curActivity <= prevActivity)
-            prevActivity = curActivity
-        }
-
+        assertTrue(verifyMonotonicity(h))
     }
 
     @Test
@@ -219,21 +235,83 @@ class HeapTests{
     {
         val h = Heap<Variable>()
         val randy = Random()
-        for (i in 1..100) {
+        for (i in 1..1000) {
             val v = Variable(i.toString())
             v.activity = randy.nextFloat()*10000f
             h.add(v)
         }
 
-        //expected that activity monotonically rises
-        var prevActivity: Float = Float.MAX_VALUE
+        assertTrue(verifyMonotonicity(h))
+    }
+
+    @Test
+    fun largeInsertionOrderVariableTestWithChanges()
+    {
+        val h = Heap<Variable>()
+        val randy = Random()
+        val vars:MutableList<Variable> = LinkedList()
+        for (i in 1..1000) {
+            val v = Variable(i.toString())
+            v.activity = randy.nextFloat()*10000f
+            vars.add(v)
+            h.add(v)
+        }
+        assertTrue(verifyMonotonicity(h))
+        for (v in vars) {
+            v.activity = randy.nextFloat()*10000f
+        }
+        h.reorder()
+
+        assertTrue(verifyMonotonicity(h))
+    }
+
+    private fun<T : Comparable<T>> verifyMonotonicity(h:Heap<T>):Boolean
+    {
+        var previous:T? = null
         while (h.size() != 0)
         {
-            val v = h.pop()!!
-            val curActivity = v.activity
-            assertTrue(curActivity <= prevActivity)
-            prevActivity = curActivity
+            val current = h.pop()!!
+            if (previous == null) {
+                previous = current
+                continue
+            }
+            if(current > previous)
+                return false
+            previous = current
         }
-
+        return true
     }
+
+    @Test
+    fun reorderTest()
+    {
+        val vara = Variable("a")
+        vara.activity = 1f
+        val varb = Variable("b")
+        varb.activity = 2f
+        val varc = Variable("c")
+        varc.activity = 3f
+        val vard = Variable("d")
+        vard.activity = 4f
+
+        val h:Heap<Variable> = Heap()
+        h.add(vara)
+        h.add(varb)
+        h.add(varc)
+        h.add(vard)
+
+        vara.activity = 4f
+        varb.activity = 3f
+        varc.activity = 2f
+        vard.activity = 1f
+
+        h.reorder()
+
+        assertEquals(vara,h.pop())
+        assertEquals(varb,h.pop())
+        assertEquals(varc,h.pop())
+        assertEquals(vard,h.pop())
+        assertEquals(null,h.pop())
+    }
+
 }

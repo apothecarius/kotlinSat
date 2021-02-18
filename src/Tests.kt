@@ -367,6 +367,20 @@ class Tests{
         assertEquals(code,formulaWl.toString())
     }
 
+    @Test
+    fun bombTest()
+    {
+        val formula = readCnf("probFiles/smallSatBomb.cnf")
+        val backbone = getBackboneIntersections(formula)
+        val expectedBackbone:List<Int> = listOf(-215, -205, 131, 138, 143, 204, 208, 210 ,243)
+        assertEquals(9,backbone.size)
+        for (lit:Literal in backbone) {
+            val asInt = lit.first.id.toInt() * if(lit.predicate) 1 else -1
+            assertTrue(expectedBackbone.contains(asInt))
+        }
+
+    }
+
 
     @Test
     fun testQuickBackbone()
