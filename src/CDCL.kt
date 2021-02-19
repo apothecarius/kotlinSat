@@ -20,6 +20,30 @@ fun CdclTable.getAxiomaticEntries(): Sequence<CdclTableEntry> = sequence{
     }
 }
 
+/**
+ * If false, decisions will pick a random variable and assign it to True.
+ * If true, a variable will be picked from the clauseSets activityHeap,
+ * which prefers variables that occur in many conflicts and this variable
+ * will be assigned to the opposite that it was before
+ */
+const val useVsids:Boolean = true
+
+/**
+ * like in Chaff, all variables activities are halved every 256 conflicts
+ */
+const val conflictNumberForActivityDecay:Int = 256
+
+/**
+ * To not spend too much time with reordering, the reordering of the heap is only done every couple of conflicts
+ */
+const val conflictNumberForActivityReordering = 17
+
+/**
+ * increments with every conflict to trigger activity decay and reordering
+ */
+var conflictCounter:Int = 0
+
+
 fun CdclTable.countAxiomaticLiterals():Int {
     return this.getAxiomaticEntries().count()
 }
@@ -69,7 +93,7 @@ fun CdclTable.print(){
  */
 typealias Resolvent = MutableMap<Variable,Boolean>
 fun makeResolvent():Resolvent = mutableMapOf()
-fun makeResolvent(c:Clause):Resolvent = mutableMapOf<Variable,Boolean>(pairs=*c.literals)
+fun makeResolvent(c:Clause):Resolvent = mutableMapOf(pairs=c.literals)
 fun Resolvent.resolve(other: Clause, v: Variable) {
     this.resolve(makeResolvent(other),v)
 }
@@ -145,7 +169,14 @@ fun cdclSolve(clauseSet: ClauseSet,variablePriorityQueue:Map<Variable,Boolean>? 
         }
 
 
-        if(clauseSet.isEmpty){
+        if(clauseSet.isEmpty)
+        {
+            //a conflict occurred
+            conflictCounter++
+            conflictCounter %= conflictNumberForActivityDecay*conflictNumberForActivityReordering
+            if (conflictCounter % conflictNumberForActivityDecay == 0) {
+                clauseSet.getPresentVariables().forEach { it.activity /= 2f }
+            }
             if (clauseSet is ClauseSetWatchedLiterals) {
                 clauseSet.resetAllWatchedLiterals()
             }
@@ -208,6 +239,11 @@ fun cdclSolve(clauseSet: ClauseSet,variablePriorityQueue:Map<Variable,Boolean>? 
             //explicitely unset variables, this will also reset watched literals
             clauseSet.resetVars(affectedVariables)
 
+            //increase activity for conflict variables
+            resolventClause.literals.forEach { it.first.activity++ }
+            if (conflictCounter % conflictNumberForActivityReordering == 0) {
+                clauseSet.reorderActivityHeap()
+            }
         }
         else if (clauseSet.isFulfilled) {
 
@@ -244,9 +280,13 @@ fun cdclSolve(clauseSet: ClauseSet,variablePriorityQueue:Map<Variable,Boolean>? 
             //else: if no candidates exist (anymore) or none are supposed to be used
             // default to using any free variable
             if(explicitelySetVar == null){
-                explicitelySetVar = clauseSet.getAnyFreeVariable()!!
-                explicitelySetVar.setTo(decisionVariableSetting)
-//                explicitelySetVar = clauseSet.makeVsidsAssignment() //TODO get this to work
+                if(useVsids)
+                {
+                    explicitelySetVar = clauseSet.makeVsidsAssignment() //TODO get this to work
+                }else{
+                    explicitelySetVar = clauseSet.getAnyFreeVariable()!!
+                    explicitelySetVar.setTo(decisionVariableSetting)
+                }
             }
             explicitelySetVar!!
 

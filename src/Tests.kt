@@ -4,6 +4,7 @@ import org.junit.Test
 import java.util.*
 import java.util.stream.IntStream
 import kotlin.test.assertEquals
+import kotlin.test.fail
 
 /**
  * create random clausesets and compare the result of DPLL and CDCL solvers
@@ -440,6 +441,32 @@ class Tests{
                 }
             }
         }
+    }
+    @Test
+    fun activityInitializationTest()
+    {
+        val form:ClauseSetWatchedLiterals = ClauseSetWatchedLiterals("a|b|c & b|!a & !c|a | d")
+        for (vari: Variable in form.getPresentVariables()) {
+            assertEquals(when(vari.id){
+                "a" -> 3f
+                "b" -> 2f
+                "c" -> 2f
+                "d" -> 1f
+                else -> {
+                    fail()
+                    0
+                }
+            },vari.activity)
+        }
+    }
+
+    @Test
+    fun refinedEssentialsTest()
+    {
+        //testrun with file from SAT Competition
+        //this file takes impractically long to solve without VSIDS
+        val form: ClauseSetWatchedLiterals = readCnf("probFiles/fla-qhid-200-1.cnf")
+        assertTrue(cdclSAT(form))
     }
 }
 

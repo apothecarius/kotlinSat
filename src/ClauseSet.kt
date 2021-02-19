@@ -7,13 +7,29 @@ open class ClauseSet(c:Array<Clause>)
     private val clauses : MutableList<Clause> = c.toMutableList()
     private val activityHeap:Heap<Variable> = Heap(this.getPresentVariables())
 
+
+    //initialize literal activity with the number of occurences
+    init{
+        this.getPresentVariables().forEach { it.activity = 0f }
+        this.clauses.forEach{ curClause ->
+            curClause.literals.forEach{curLit ->
+                curLit.first.activity++
+            }}
+    }
+
+    fun reorderActivityHeap() = this.activityHeap.reorder()
+
     fun makeVsidsAssignment():Variable
     {
         //the function is called when there is an unassigned variable
         //and variables with assignment are always considered "smaller"
-        this.activityHeap.reorder() //TODO this should not be necessary when all variable
         // changes update the variable position
-        val toAssign = this.activityHeap.pop()!!
+        var toAssign:Variable
+        do{
+            toAssign = this.activityHeap.pop()!!
+        } while(!toAssign.isUnset)
+
+        //assigned variables might be returned, have to be skipped
         assert(toAssign.isUnset)
         toAssign.setTo(!toAssign.previousSetting)
         return toAssign
@@ -28,8 +44,7 @@ open class ClauseSet(c:Array<Clause>)
      */
     constructor(cs:String):this(cs,VariableSet()) //integrate the below into this constructor
     protected constructor(cs:String,vs:VariableSet)  :
-            this(cs.split("&").
-                    map { c:String -> Clause(c,vs) }.toTypedArray())
+            this(cs.split("&").map { c:String -> Clause(c,vs) }.toTypedArray())
 
     val isFulfilled : Boolean
         get() = clauses.all { a:Clause -> a.isSatisfied }
@@ -71,6 +86,10 @@ open class ClauseSet(c:Array<Clause>)
         return this.getAndSetUnitsWithReason().map { it -> it.first.first}
     }
 
+    /**
+     * Iterates over all clauses, looking for one in unit state and assigns the last unassigned variable
+     * @return all variables that were assigned in this way (that were unit propagated) and the reason clause
+     */
     open fun getAndSetUnitsWithReason():List<Pair<Literal,Clause>>
     {
         var retu  = mutableListOf<Pair<Literal,Clause>>()
@@ -117,7 +136,11 @@ open class ClauseSet(c:Array<Clause>)
     open fun resetVars(vs : List<Variable>):Unit
     {
         for(uv:Variable in vs)
+        {
             uv.setTo(VariableSetting.Unset)
+            this.activityHeap.add(uv)
+        }
+
     }
     fun getVariableSetting():Set<Literal> =
             this.getPresentVariables().filter{ ! it.isUnset}.

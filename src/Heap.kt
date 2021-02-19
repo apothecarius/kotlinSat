@@ -25,6 +25,11 @@ class Heap<T : Comparable<T>>()
         private fun depth():Int = 1 + max((this.left?.depth() ?: 0) , (this.right?.depth() ?: 0))
         private fun minDepth():Int = 1 + min((this.left?.minDepth() ?: 0) , (this.right?.minDepth() ?: 0))
 
+        fun _getAllContent():List<T> = listOf(this.content!!) +
+            (this.left?._getAllContent()?: emptyList<T>()) +
+            (this.right?._getAllContent()?: emptyList<T>())
+
+
         fun add(e:T)
         {
             //try to insert the element leftmost
