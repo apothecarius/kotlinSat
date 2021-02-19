@@ -246,6 +246,7 @@ fun cdclSolve(clauseSet: ClauseSet,variablePriorityQueue:Map<Variable,Boolean>? 
             if(explicitelySetVar == null){
                 explicitelySetVar = clauseSet.getAnyFreeVariable()!!
                 explicitelySetVar.setTo(decisionVariableSetting)
+//                explicitelySetVar = clauseSet.makeVsidsAssignment() //TODO get this to work
             }
             explicitelySetVar!!
 

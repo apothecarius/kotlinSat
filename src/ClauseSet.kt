@@ -1,4 +1,3 @@
-
 /**
  * A clauseset is the conjunction of multiple clauses
  * All clauses must be fulfilled for a clauseset to be fulfilled
@@ -6,6 +5,19 @@
 open class ClauseSet(c:Array<Clause>)
 {
     private val clauses : MutableList<Clause> = c.toMutableList()
+    private val activityHeap:Heap<Variable> = Heap(this.getPresentVariables())
+
+    fun makeVsidsAssignment():Variable
+    {
+        //the function is called when there is an unassigned variable
+        //and variables with assignment are always considered "smaller"
+        this.activityHeap.reorder() //TODO this should not be necessary when all variable
+        // changes update the variable position
+        val toAssign = this.activityHeap.pop()!!
+        assert(toAssign.isUnset)
+        toAssign.setTo(!toAssign.previousSetting)
+        return toAssign
+    }
 
     /**
      * A ClauseSet can be instantiated by passing a string containing a formula

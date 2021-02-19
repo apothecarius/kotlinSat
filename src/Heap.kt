@@ -4,8 +4,13 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.test.*
 
-class Heap<T : Comparable<T>>
+class Heap<T : Comparable<T>>()
 {
+    constructor(elements:Sequence<T>) : this()
+    {
+        elements.forEach { this.add(it)}
+    }
+
     class BinaryTree<T: Comparable<T>>(parParam:BinaryTree<T>?, contentParam:T?)
     {
         private var content:T? = contentParam
@@ -16,6 +21,7 @@ class Heap<T : Comparable<T>>
         fun size():Int = (if(this.content != null) 1 else 0) +
                 (this.left?.size() ?: 0) +
                 (this.right?.size() ?: 0)
+        fun isEmpty():Boolean = this.size() == 0
         private fun depth():Int = 1 + max((this.left?.depth() ?: 0) , (this.right?.depth() ?: 0))
         private fun minDepth():Int = 1 + min((this.left?.minDepth() ?: 0) , (this.right?.minDepth() ?: 0))
 
@@ -62,14 +68,14 @@ class Heap<T : Comparable<T>>
                 return retu
             } else if (rightDepth == leftDepth) {
                 val retu = this.right!!.popLowest()
-                if (this.right!!.size() == 0) {
+                if (this.right!!.isEmpty()) {
                     this.right = null
                 }
                 return retu
             } else
             {
                 val retu = this.left!!.popLowest()
-                if (this.left!!.size() == 0) {
+                if (this.left!!.isEmpty()) {
                     this.left = null
                 }
                 return retu
@@ -164,6 +170,7 @@ class Heap<T : Comparable<T>>
         if(this.tree != null)
             this.tree!!.size()
         else 0
+    fun isEmpty():Boolean = this.size() == 0
 
     fun add(e:T)
     {
@@ -312,6 +319,39 @@ class HeapTests{
         assertEquals(varc,h.pop())
         assertEquals(vard,h.pop())
         assertEquals(null,h.pop())
+    }
+
+
+    @Test
+    fun unassignedVariablesComeFirstTest()
+    {
+        val h:Heap<Variable> = Heap()
+        val randy = Random()
+        var hasAssi:Boolean = true
+        for (i in 1..1000) {
+            val v = Variable(i.toString())
+            v.activity = randy.nextFloat()*10000f
+            if (hasAssi) {
+                v.setTo(true)
+            }
+            hasAssi = !hasAssi
+            h.add(v)
+        }
+
+        h.reorder()
+
+        //variables without assignment should come out first,
+        // then those with assignment
+        hasAssi = false
+        while (!h.isEmpty()) {
+            val cur = h.pop()!!
+            if (!hasAssi && !cur.isUnset) {
+                hasAssi = true
+            } else if(hasAssi) //cant go back
+            {
+                assertFalse(cur.isUnset)
+            }
+        }
     }
 
 }

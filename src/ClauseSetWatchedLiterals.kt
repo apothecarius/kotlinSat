@@ -12,17 +12,10 @@
 class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.map { it as Clause }.toTypedArray()) {
 
     constructor(cs: String) : this(cs, VariableSet())
-    //constructor(cs:ClauseSetWatchedLiterals) : this(cs.clausesWL.map { it -> ClauseWatchedLiterals(it) }.toTypedArray())
-    //constructor(cs:ClauseSetWatchedLiterals,vs:VariableSet) : this(cs.getClauses().map { it -> ClauseWatchedLiterals(it,vs) }.toTypedArray())
     constructor(cs:ClauseSetWatchedLiterals,vs:VariableSet) : this(cs.clausesWL.map { it -> ClauseWatchedLiterals(it,vs) }.toTypedArray())
     constructor(cs:ClauseSetWatchedLiterals,referVariables:Boolean) : this(cs,if(referVariables){
                 VariableSet(cs.getPresentVariables())}else{VariableSet()})
-/*    constructor(toCopy: ClauseSetWatchedLiterals):this(toCopy.toString())
-    {
-        for (cvs: Literal in toCopy.getVariableSetting()) {
-            this.findVar(cvs.variable.id)!!.setTo(cvs.second)
-        }
-    }*/
+
 
 
     private constructor(cs:String,vs:VariableSet)  :
@@ -61,22 +54,6 @@ class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.ma
         return mutableOccurences.toMap()
     }
 
-    fun getLiteralOccurences(): Map<Literal, Set<ClauseWatchedLiterals>> {
-        var retu = mutableMapOf<Literal, Set<ClauseWatchedLiterals>>()
-        for (clausesWithVar in this.occurences) {
-            for (prefix in arrayOf(true, false)) {
-                val occurencesWithPrefix = clausesWithVar.value.filter {it ->
-                    it.literals.filter {
-                        it.predicate == prefix && it.variable ==  clausesWithVar.key}.isNotEmpty() }
-                if (occurencesWithPrefix.isNotEmpty()) {
-                    val literalKey:Literal = Pair(clausesWithVar.key,prefix)
-                    retu.put(literalKey,occurencesWithPrefix.toSet())
-                }
-            }
-
-        }
-        return retu
-    }
 
     override fun addResolvent(c: Clause) {
         super.addResolvent(c)
@@ -86,13 +63,6 @@ class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.ma
             this.occurences[l]!!.add(c)
         }
     }
-
-    override fun getPresentVariables(): Sequence<Variable> = sequence {
-        for (v: Variable in occurences.keys) {
-            yield(v)
-        }
-    }
-
 
     override fun getAndSetUnitsWithReason(): List<Pair<Literal, Clause>> {
         var retu:MutableList<Pair<Literal, Clause>> = mutableListOf()

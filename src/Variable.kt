@@ -119,14 +119,22 @@ class Variable constructor(c: VariableIdentifier) : Comparable<Variable> {
             return super.equals(other)
     }
 
-    override fun compareTo(other: Variable): Int =
-            (other.activity - this.activity).let {
-                when {
-                    it > 0 -> -1
-                    it < 0 -> 1
-                    else -> 0
-                }
+    override fun compareTo(other: Variable): Int
+    {
+        //an unset var always takes precedence, so that assigned variables are unpreferred
+        if (this.isUnset != other.isUnset) {
+            return if(this.isUnset) 1 else -1
+        }
+
+        return (other.activity - this.activity).let {
+            when {
+                it > 0 -> -1
+                it < 0 -> 1
+                else -> 0
             }
+        }
+    }
+
 }
 
 class VariableSet
