@@ -9,7 +9,7 @@
  * This O(1) only counts in most cases. The watched literals are reset when backtracking
  * occurs
  */
-class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.map { it as Clause }.toTypedArray()) {
+open class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.map { it as Clause }.toTypedArray()) {
 
     constructor(cs: String) : this(cs, VariableSet())
     constructor(cs:ClauseSetWatchedLiterals,vs:VariableSet) : this(cs.clausesWL.map { it -> ClauseWatchedLiterals(it,vs) }.toTypedArray())
