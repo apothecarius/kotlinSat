@@ -12,7 +12,7 @@ fun Literal.becomesFalse():Boolean{
 }
 val Literal.isUnset: Boolean get() =
     this.variable.setting == VariableSetting.Unset
-val Literal.writeShort:String get() = (if(!this.predicate) "!" else "") + this.variable.id
+val Literal.toString:String get() = (if(!this.predicate) "!" else "") + this.variable.id
 
 
 fun codeToLiteralSet(c: String,knownVariables: VariableSet): Array<Literal> =

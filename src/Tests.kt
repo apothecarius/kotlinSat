@@ -468,5 +468,58 @@ class Tests{
         val form: ClauseSetWatchedLiterals = readCnf("probFiles/fla-qhid-200-1.cnf")
         assertTrue(cdclSAT(form))
     }
+
+
+    @Test
+    fun sudokuTest()
+    {
+        val sudo = Sudoku(arrayOf(
+                arrayOf(1,1,5),
+                arrayOf(1,3,9),
+                arrayOf(1,7,4),
+                arrayOf(2,1,7),
+                arrayOf(2,3,8),
+                arrayOf(2,4,3),
+                arrayOf(2,6,4),
+                arrayOf(2,7,9),
+                arrayOf(3,1,6),
+                arrayOf(3,3,1),
+                arrayOf(3,7,7),
+                arrayOf(3,8,3),
+                arrayOf(4,1,4),
+                arrayOf(4,2,6),
+                arrayOf(4,3,2),
+                arrayOf(4,4,5),
+                arrayOf(5,1,3),
+                arrayOf(5,2,8),
+                arrayOf(5,3,5),
+                arrayOf(5,4,7),
+                arrayOf(5,5,2),
+                arrayOf(5,7,6),
+                arrayOf(5,8,4),
+                arrayOf(5,9,9),
+                arrayOf(6,1,1),
+                arrayOf(6,3,7),
+                arrayOf(6,4,4),
+                arrayOf(6,6,8),
+                arrayOf(6,7,2),
+                arrayOf(7,1,2),
+                arrayOf(7,4,1),
+                arrayOf(7,9,4),
+                arrayOf(8,3,3),
+                arrayOf(8,5,4),
+                arrayOf(8,8,8),
+                arrayOf(8,9,7),
+                arrayOf(9,2,7),
+                arrayOf(9,5,5),
+                arrayOf(9,6,3),
+                arrayOf(9,9,6)
+        ))
+        cdclSAT(sudo)
+        //TODO verify sudoku conditions. Iterate over true assigned vars by coordinate
+        // and verify that each row block and column has exactly one of each assignments
+        sudo.printTrueAssignments()
+
+    }
 }
 

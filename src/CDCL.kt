@@ -139,8 +139,10 @@ fun cdclSAT(clauseSet:ClauseSet):Boolean
     return clauseSet.isFulfilled
 }
 
-fun cdclSolve(s:String) : Unit {
-    cdclSolve(ClauseSetWatchedLiterals(s))
+fun cdclSolve(s:String) : ClauseSetWatchedLiterals {
+    val formula = ClauseSetWatchedLiterals(s)
+    cdclSolve(formula)
+    return formula
 }
 
 //fun cdclSolve(s: String) = cdclSolve(ClauseSetWatchedLiterals(s))
@@ -307,11 +309,4 @@ private var decisionVariableSetting:VariableSetting = VariableSetting.True
 fun invertDecisionVariableSetting() {
     decisionVariableSetting = decisionVariableSetting.getOpposite()
 
-}
-fun setDecisionVariableSetting(v: Boolean) {
-    decisionVariableSetting = when (v) {
-        true -> VariableSetting.True
-        false -> VariableSetting.False
-
-    }
 }
