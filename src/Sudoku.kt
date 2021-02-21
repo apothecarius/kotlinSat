@@ -1,22 +1,52 @@
-import org.junit.Test
-import kotlin.test.assertEquals
+import kotlin.test.fail
 
+typealias FieldPossibilities = Array<Variable>
 /**
  * Allows to find sudoku SAT variables by x coordinate, y coordinate and assignment
  * Note that some textual methods use 1..9 indices, but this object itself uses 0..8
+ * Can be instantiated with Sudoku.makeVariables()
  */
-typealias SudokuVariableSet = Array<Array<Array<Variable>>>
+typealias SudokuVariableSet = Array<Array<FieldPossibilities>>
+
+/**
+ * Returns coordinates of sudoku field (within [0..8]**2)
+ * Blocktype can be in [1..3] for column,row or square
+ */
+private fun SudokuVariableSet.getSudokuFieldCoord(blockIdx: Int, fieldIdx: Int, blockType: Int):Pair<Int,Int> {
+    assert(blockIdx in 0..8)
+    assert(fieldIdx in 0..8)
+    assert(blockType in 1..3)
+
+    return when (blockType) {
+        1 -> Pair(blockIdx, fieldIdx)
+        2 -> Pair(fieldIdx, blockIdx)
+        3 -> {
+            val bx = blockIdx % 3
+            val by = (blockIdx-bx) / 3
+            val dx = fieldIdx % 3
+            val dy = (fieldIdx - dx) / 3
+            Pair(bx*3+dx, by*3+dy)
+        }
+        else -> fail("")
+    }
+}
+private fun SudokuVariableSet.getSudokuField(blockIdx: Int, fieldIdx: Int, blockType: Int): FieldPossibilities {
+    with(this.getSudokuFieldCoord(blockIdx,fieldIdx,blockType)){
+        return this@getSudokuField[first][second]
+    }
+
+}
+
+
 /**
  * This class serves to model sudoku problems as CNF formulae and solve them
  * with the sat solver
  * The constructor can be given a set of fixed field assignments with both
  * x and y indices in [1,9]]
  */
-class Sudoku(fixedVars:Array<Array<Int>>) : ClauseSetWatchedLiterals(makeSudokuFormula(fixedVars))
-{
+class Sudoku(fixedVars: Array<Array<Int>>) : ClauseSetWatchedLiterals(makeSudokuFormula(fixedVars)) {
     //TODO string based constructor or from a file
-    fun printTrueAssignments()
-    {
+    fun printTrueAssignments() {
         for (vari in this.getPresentVariables()) {
             if (!vari.isUnset && vari.boolSetting!!) {
                 println(vari.id)
@@ -25,7 +55,7 @@ class Sudoku(fixedVars:Array<Array<Int>>) : ClauseSetWatchedLiterals(makeSudokuF
     }
 
     companion object {
-        fun makeVarId(x: Int, y: Int, assignment: Int): String =
+        private fun makeVarId(x: Int, y: Int, assignment: Int): String =
                 (x.toString() + "x" + y.toString() + ":" + assignment.toString())
 
         fun makeSudokuFormula(fixedVars: Array<Array<Int>>): Array<ClauseWatchedLiterals> {
@@ -33,30 +63,34 @@ class Sudoku(fixedVars:Array<Array<Int>>) : ClauseSetWatchedLiterals(makeSudokuF
             //base sudoku rules can be explained with two rules
             //R1a + R1b: Every field must have exactly one assignment
             // (split into R1a"at least one assignment" and R1b"at most one assignment"
-            //R2: Every block/column/row must contain every assignment
+            //R2: Every block/column/row must contain every assignment once
+            // also split into "have every one" and "they must be unique per block"
             return (ensureFieldsHaveSomeAssignment(vars) +
                     ensureFieldsHaveAtMostOneAssignment(vars) +
                     ensureBlocksHaveEveryAssignment(vars) +
                     ensureBlocksHaveUniqueAssignments(vars) +
-                    fixAssignments(fixedVars,vars)
-                    ).toTypedArray()
+                    fixAssignments(fixedVars, vars)
+                    ).toList().toTypedArray()
         }
 
-        private fun fixAssignments(fixedVars: Array<Array<Int>>,knownVars:SudokuVariableSet): Iterable<ClauseWatchedLiterals> {
-            val retu = mutableListOf<ClauseWatchedLiterals>()
-            for (fix in fixedVars) {
-                assert(fix.size == 3)
+        /**
+         * Returns rules that enforce assigning a specific field to a specific number
+         */
+        private fun fixAssignments(fixedVars: Array<Array<Int>>, knownVars: SudokuVariableSet): Sequence<ClauseWatchedLiterals> {
+            return sequence {
+                for (fix in fixedVars) {
+                    assert(fix.size == 3)
                     { "Assignments must have 3 numbers between 1 and 9" }
-                fix.forEach { assert(it in 1..9)
-                    { "Assignments must be between 1 and 9" }
+                    fix.forEach {
+                        assert(it in 1..9)
+                        { "Assignments must be between 1 and 9" }
+                    }
+                    //values are given as [1..9]
+                    val theVar = knownVars[fix[0] - 1][fix[1] - 1][fix[2] - 1]
+                    ClauseWatchedLiterals(Literal(theVar, true))
                 }
-                //values are given as [1..9]
-                val theVar = knownVars[fix[0]-1][fix[1]-1][fix[2]-1]
-                retu.add(ClauseWatchedLiterals(Literal(theVar,true)))
             }
-            return retu
         }
-
 
 
         private fun makeVariables(): SudokuVariableSet {
@@ -87,153 +121,99 @@ class Sudoku(fixedVars:Array<Array<Int>>) : ClauseSetWatchedLiterals(makeSudokuF
             return matrix
         }
 
-        private fun ensureFieldsHaveSomeAssignment(vars: SudokuVariableSet): Iterable<ClauseWatchedLiterals> =
-                sequence {
-                    for (x in 0..8) {
-                        for (y in 0..8) {
-                            val thisFieldsAssignments: Array<Literal> = vars[x][y].map { Literal(it, true) }.toTypedArray()
-                            val anyOfThem = ClauseWatchedLiterals(thisFieldsAssignments)
-                            yield(anyOfThem)
-                        }
-                    }
-                }.toList()
-
-
-        private fun ensureFieldsHaveAtMostOneAssignment(vars: SudokuVariableSet): Iterable<ClauseWatchedLiterals> =
-                sequence {
-                    for (x in 0..8) {
-                        for (y in 0..8) {
-                            for (i in 0..8) {
-                                for (j in (0..8)) {
-                                    if (i == j)
-                                        continue
-                                    val curRule = ClauseWatchedLiterals(arrayOf(
-                                            Literal(vars[x][y][i], false),
-                                            Literal(vars[x][y][j], false)
-                                    ))
-                                    yield(curRule)
-
-                                }
-                            }
-                        }
-                    }
-                }.toList()
-
-
-        private fun ensureBlocksHaveEveryAssignment(vars: SudokuVariableSet): Iterable<ClauseWatchedLiterals> {
-            val retu: MutableList<ClauseWatchedLiterals> = mutableListOf()
-            for (assignment in 0..8) {
-                //rows
-                for (x in 0..8) {
-                    //in row x, any field must have 'assignment'
-                    val curRule = ClauseWatchedLiterals(arrayOf(
-                            Literal(vars[x][0][assignment], true),
-                            Literal(vars[x][1][assignment], true),
-                            Literal(vars[x][2][assignment], true),
-                            Literal(vars[x][3][assignment], true),
-                            Literal(vars[x][4][assignment], true),
-                            Literal(vars[x][5][assignment], true),
-                            Literal(vars[x][6][assignment], true),
-                            Literal(vars[x][7][assignment], true),
-                            Literal(vars[x][8][assignment], true),
-                    ))
-                    retu.add(curRule)
-                }
-
-                //columns
-                for (y in 0..8) {
-                    //in column y, any field must have 'assignment'
-                    val curRule = ClauseWatchedLiterals(arrayOf(
-                            Literal(vars[0][y][assignment], true),
-                            Literal(vars[1][y][assignment], true),
-                            Literal(vars[2][y][assignment], true),
-                            Literal(vars[3][y][assignment], true),
-                            Literal(vars[4][y][assignment], true),
-                            Literal(vars[5][y][assignment], true),
-                            Literal(vars[6][y][assignment], true),
-                            Literal(vars[7][y][assignment], true),
-                            Literal(vars[8][y][assignment], true),
-                    ))
-                    retu.add(curRule)
-                }
-
-                //blocks
-                for (xb in 0..2) {
-                    for (yb in 0..2) {
-                        val xc = xb * 3
-                        val yc = yb * 3
-                        val curRule = ClauseWatchedLiterals(arrayOf(
-                                Literal(vars[xc][yc][assignment], true),
-                                Literal(vars[xc][yc + 1][assignment], true),
-                                Literal(vars[xc][yc + 2][assignment], true),
-                                Literal(vars[xc + 1][yc][assignment], true),
-                                Literal(vars[xc + 1][yc + 1][assignment], true),
-                                Literal(vars[xc + 1][yc + 2][assignment], true),
-                                Literal(vars[xc + 2][yc][assignment], true),
-                                Literal(vars[xc + 2][yc + 1][assignment], true),
-                                Literal(vars[xc + 2][yc + 2][assignment], true),
-                        ))
-                        retu.add(curRule)
-                    }
-                }
+        private fun ensureFieldsHaveSomeAssignment(vars: SudokuVariableSet): Sequence<ClauseWatchedLiterals> {
+            return do9ToPowerNTimes { x, y ->
+                val thisFieldsAssignments: Array<Literal> = vars[x][y].map { Literal(it, true) }.toTypedArray()
+                sequenceOf(ClauseWatchedLiterals(thisFieldsAssignments))
             }
-            return retu
         }
 
 
-        fun ensureBlocksHaveUniqueAssignments(vars: SudokuVariableSet): Iterable<ClauseWatchedLiterals> {
-            val retu: MutableList<ClauseWatchedLiterals> = mutableListOf()
-            for (curRow in 0..8) {
-                for (rowsField in 0..8) {
-                    for (rowsOtherField in 0..8) {
-                        if (rowsOtherField == rowsField) {
-                            continue
-                        }
-                        for (assignment in 0..8) {
-                            //row
-                            retu.add(ClauseWatchedLiterals(arrayOf(
-                                    Literal(vars[curRow][rowsField][assignment], false),
-                                    Literal(vars[curRow][rowsOtherField][assignment], false)
-                            )))
-                            //column
-                            retu.add(ClauseWatchedLiterals(arrayOf(
-                                    Literal(vars[rowsField][curRow][assignment], false),
-                                    Literal(vars[rowsOtherField][curRow][assignment], false)
-                            )))
-                        }
+        private fun ensureFieldsHaveAtMostOneAssignment(vars: SudokuVariableSet): Sequence<ClauseWatchedLiterals> {
+            return do9ToPowerNTimes { x, y, i, j ->
+                if (i == j) {
+                    emptySequence<ClauseWatchedLiterals>()
+                }
+                val curRule = ClauseWatchedLiterals(arrayOf(
+                        Literal(vars[x][y][i], false),
+                        Literal(vars[x][y][j], false)
+                ))
+                sequenceOf(curRule)
+            }
+        }
+
+        /**
+         * Calls the given function in 2 loops with number 0..8 each and returns the results in one sequence
+         */
+        private fun <T> do9ToPowerNTimes(f: ((Int, Int) -> Sequence<T>)): Sequence<T> {
+            return sequence {
+                for (x in 0..8) {
+                    for (y in 0..8) {
+                        yieldAll(f(x, y))
                     }
                 }
             }
+        }
 
-            //blocks
-            for (bx in 0..2) {
-                for (by in 0..2) {
-                    for (dx in 0..2) {
-                        for (odx in 0..2) {
-                            if (dx == odx) continue
-                            for (dy in 0..2) {
-                                for (ody in 0..2) {
-                                    val x = bx * 3 + dx
-                                    val y = by * 3 + dy
-                                    val otherX = bx * 3 + odx
-                                    val otherY = by * 3 + ody
-                                    for (assignment in 0..8) {
-                                        retu.add(ClauseWatchedLiterals(arrayOf(
-                                                Literal(vars[x][y][assignment], false),
-                                                Literal(vars[otherX][otherY][assignment], false)
-                                        )))
-                                    }
-                                }
+        /**
+         * Calls the given function in 4 loops with number 0..8 each and returns the results in one sequence
+         */
+        private fun <T> do9ToPowerNTimes(f: ((Int, Int, Int, Int) -> Sequence<T>)): Sequence<T> {
+            return sequence {
+                for (a in 0..8) {
+                    for (b in 0..8) {
+                        for (c in 0..8) {
+                            for (d in 0..8) {
+                                yieldAll(f(a, b, c, d))
                             }
                         }
                     }
                 }
             }
-            return retu
+        }
+
+        private fun ensureBlocksHaveEveryAssignment(vars: SudokuVariableSet): Sequence<ClauseWatchedLiterals> {
+            //val retu: MutableList<ClauseWatchedLiterals> = mutableListOf()
+
+            return do9ToPowerNTimes { assignment:Int,blockIdx:Int ->
+
+                sequence{
+                    //in row x, any field must have 'assignment'
+                    ClauseWatchedLiterals((0..8).map { fieldIdx ->
+                        Literal(vars[blockIdx][fieldIdx][assignment], true)
+                    }.toTypedArray())
+                    //same for columns
+                    ClauseWatchedLiterals((0..8).map { fieldIdx ->
+                        Literal(vars[fieldIdx][blockIdx][assignment], true)
+                    }.toTypedArray())
+
+                    //same for squares
+                    ClauseWatchedLiterals((0..8).map { fieldIdx ->
+                        val squaresField = vars.getSudokuField(blockIdx, fieldIdx, 3)
+                        Literal(squaresField[assignment], true)
+                    }.toTypedArray())
+                }
+            }
+        }
+
+        private fun ensureBlocksHaveUniqueAssignments(vars: SudokuVariableSet): Sequence<ClauseWatchedLiterals> {
+            return do9ToPowerNTimes { blockIdx, blocksField, blocksOtherField, assignment ->
+                if (blocksOtherField == blocksField) {
+                    emptySequence<ClauseWatchedLiterals>()
+                }
+                sequence{
+                    for (blockType in 1..3) {
+                        val field = vars.getSudokuField(blockIdx, blocksField, blockType)
+                        val otherField = vars.getSudokuField(blockIdx, blocksOtherField, blockType)
+
+                        ClauseWatchedLiterals(arrayOf(
+                                Literal(field[assignment], false),
+                                Literal(otherField[assignment], false)
+                        ))
+                    }
+                }
+            }
         }
     }
 }
-
-
-
 
