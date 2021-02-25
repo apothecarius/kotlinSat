@@ -1,4 +1,4 @@
-package tests
+package test
 
 import materials.ClauseSet
 import materials.ClauseSetWatchedLiterals
@@ -8,8 +8,7 @@ import materials.Variable
 import materials.VariableIdentifier
 import materials.VariableSetting
 import materials.makeVarIds
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Test
 import materials.predicate
 import materials.variable
@@ -17,9 +16,6 @@ import support.Either
 import support.Main
 import support.readCnf
 import java.util.*
-import java.util.stream.IntStream
-import kotlin.test.assertEquals
-import kotlin.test.fail
 
 /**
  * create random clausesets and compare the result of DPLL and CDCL solvers
@@ -243,7 +239,7 @@ class Tests{
         val randy:Random = Random(1253132)
         val knownVars = makeVarIds(8)
 
-        for (i in IntStream.range(0, 100)) {
+        for (i in 0..100) {
             var boolCode:String = makeBoolCode(randy,knownVars,10, 4)
             val klaus = ClauseSetWatchedLiterals(boolCode)
 

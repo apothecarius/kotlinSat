@@ -1,12 +1,11 @@
-package tests
+package test
 
 import support.Heap
 import materials.Variable
+import org.junit.Assert.*
 import org.junit.Test
 import java.util.*
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+//import kotlin.test.*
 
 class HeapTests{
     @Test

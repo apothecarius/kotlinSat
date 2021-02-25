@@ -4,7 +4,6 @@ import materials.ClauseSetWatchedLiterals
 import materials.ClauseWatchedLiterals
 import materials.Literal
 import materials.Variable
-import kotlin.test.fail
 
 typealias FieldPossibilities = Array<Variable>
 /**
@@ -33,7 +32,7 @@ private fun SudokuVariableSet.getSudokuFieldCoord(blockIdx: Int, fieldIdx: Int, 
             val dy = (fieldIdx - dx) / 3
             Pair(bx*3+dx, by*3+dy)
         }
-        else -> fail("")
+        else -> throw Error("Only three block types in a Sudoku")
     }
 }
 private fun SudokuVariableSet.getSudokuField(blockIdx: Int, fieldIdx: Int, blockType: Int): FieldPossibilities {
