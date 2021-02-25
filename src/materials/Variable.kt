@@ -1,7 +1,7 @@
-
+package materials
 typealias VariableIdentifier = String
 enum class VariableSetting {True,False,Unset}
-fun VariableSetting.getOpposite():VariableSetting
+fun VariableSetting.getOpposite(): VariableSetting
 {
     return when(this){
         VariableSetting.True -> VariableSetting.False
@@ -15,7 +15,7 @@ fun VariableSetting.getOpposite():VariableSetting
 fun makeVarIds(numVars: Int): List<VariableIdentifier> {
     var retu = mutableListOf<VariableIdentifier>()
     for (i: Int in 64..64 + numVars) {
-        var ic:VariableIdentifier = i.toString()
+        var ic: VariableIdentifier = i.toString()
         assert(ic.isNotBlank())
         retu.add(ic)
     }
@@ -29,8 +29,8 @@ class Variable constructor(c: VariableIdentifier) : Comparable<Variable> {
 
 
     /**
-     * Increases when this variable is involved with a conflict and decreases over time
-     * Is used to determine which variable should be assigned to
+     * Increases when this materials.getVariable is involved with a conflict and decreases over time
+     * Is used to determine which materials.getVariable should be assigned to
      */
     var activity: Float = 0f
 
@@ -51,7 +51,7 @@ class Variable constructor(c: VariableIdentifier) : Comparable<Variable> {
     /**
      * Sets the variables state (false,true,unset)
      * Note that if you use watched Literals, then you need to update
-     * them in all clauseSets that use this variable
+     * them in all clauseSets that use this materials.getVariable
      */
     fun setTo(s: VariableSetting) {
         this.setting = s
@@ -60,7 +60,7 @@ class Variable constructor(c: VariableIdentifier) : Comparable<Variable> {
     /**
      * Sets the variables state (false,true)
      * Note that if you use watched Literals, then you need to update
-     * them in all clauseSets that use this variable
+     * them in all clauseSets that use this materials.getVariable
      */
     fun setTo(s: Boolean) {
         this.setting = (when (s) {
@@ -71,9 +71,9 @@ class Variable constructor(c: VariableIdentifier) : Comparable<Variable> {
     }
 
     /**
-     * Unsets the variable (away from true/false)
+     * Unsets the materials.getVariable (away from true/false)
      * Note that if you use watched Literals, then you need to update
-     * them in all clauseSets that use this variable
+     * them in all clauseSets that use this materials.getVariable
      */
     fun unset() {
         this.setting = VariableSetting.Unset
@@ -88,8 +88,8 @@ class Variable constructor(c: VariableIdentifier) : Comparable<Variable> {
             }
 
     /**
-     * if predicate is false, then the variables setting is interpreted as negated
-     * if the variable is not set then false is returned
+     * if materials.getPredicate is false, then the variables setting is interpreted as negated
+     * if the materials.getVariable is not set then false is returned
      */
     fun isTrueWith(predicate: Boolean): Boolean =
             when (this.setting) {
@@ -139,13 +139,13 @@ class Variable constructor(c: VariableIdentifier) : Comparable<Variable> {
 
 class VariableSet
 {
-    private val knownVariables:MutableMap<VariableIdentifier,Variable> = mutableMapOf()
+    private val knownVariables:MutableMap<VariableIdentifier, Variable> = mutableMapOf()
 
     constructor()
 
     constructor(vs: VariableSet)
     {
-        for (v:Variable in vs.knownVariables.values)
+        for (v: Variable in vs.knownVariables.values)
         {
             this.storeOrGet(v.id).setTo(v.setting)
         }
@@ -156,9 +156,9 @@ class VariableSet
         vs.forEach { this.knownVariables[it.id] = it}
     }
 
-    fun storeOrGet(id:VariableIdentifier):Variable
+    fun storeOrGet(id: VariableIdentifier): Variable
     {
-        var retu:Variable? = this.knownVariables[id]
+        var retu: Variable? = this.knownVariables[id]
         if(retu == null)
         {
             retu = Variable(id)

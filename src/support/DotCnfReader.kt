@@ -1,3 +1,9 @@
+package support
+
+import materials.ClauseSetWatchedLiterals
+import materials.ClauseWatchedLiterals
+import materials.Literal
+import materials.VariableSet
 import java.io.File
 import kotlin.math.absoluteValue
 
@@ -9,7 +15,7 @@ fun readCnf(file:File) : ClauseSetWatchedLiterals
     val clauses = listOf<ClauseWatchedLiterals>()
 
     var isSpecified:Boolean = false
-    val knownVars:VariableSet = VariableSet()
+    val knownVars: VariableSet = VariableSet()
     val clauseList:MutableList<ClauseWatchedLiterals> = emptyList<ClauseWatchedLiterals>().toMutableList()
     for (line: String in reader.lines())
     {
@@ -45,7 +51,7 @@ fun readCnf(file:File) : ClauseSetWatchedLiterals
                     map {it:Int -> Literal(knownVars.storeOrGet(it.absoluteValue.toString()),it > 0)
             }.toTypedArray()
 
-            val nuClause:ClauseWatchedLiterals = ClauseWatchedLiterals(disj)
+            val nuClause: ClauseWatchedLiterals = ClauseWatchedLiterals(disj)
             clauseList.add(nuClause)
         }
     }

@@ -1,3 +1,6 @@
+package materials
+
+import algorithms.WatchedLiteralToClause
 
 /**
  * This class extends ordinary clauses to have watched literals, which
@@ -12,22 +15,25 @@
 open class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet(c.map { it as Clause }.toTypedArray()) {
 
     constructor(cs: String) : this(cs, VariableSet())
-    constructor(cs:ClauseSetWatchedLiterals,vs:VariableSet) : this(cs.clausesWL.map { it -> ClauseWatchedLiterals(it,vs) }.toTypedArray())
-    constructor(cs:ClauseSetWatchedLiterals,referVariables:Boolean) : this(cs,if(referVariables){
-                VariableSet(cs.getPresentVariables())}else{VariableSet()})
+    constructor(cs: ClauseSetWatchedLiterals, vs: VariableSet) : this(cs.clausesWL.map { it -> ClauseWatchedLiterals(it,vs) }.toTypedArray())
+    constructor(cs: ClauseSetWatchedLiterals, referVariables:Boolean) : this(cs,if(referVariables){
+                VariableSet(cs.getPresentVariables())
+    }else{
+        VariableSet()
+    })
 
 
 
-    private constructor(cs:String,vs:VariableSet)  :
+    private constructor(cs:String,vs: VariableSet)  :
         this(cs.split("&").
                 map { c:String -> ClauseWatchedLiterals(c,vs) }.toTypedArray())
 
     val clausesWL:List<ClauseWatchedLiterals>
     get() = this.getClauses() as List<ClauseWatchedLiterals>
 
-    //TODO occurences pro Literal anstatt Variable
+    //TODO occurences pro materials.Literal anstatt materials.Variable
     /**
-     * stores for every variable the occurences in clauses
+     * stores for every materials.getVariable the occurences in clauses
      * the map itself is not mutable, because no new variables can pop up,
      * but new clauses can be created
      */
@@ -59,7 +65,7 @@ open class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet
         super.addResolvent(c)
         val c = c as ClauseWatchedLiterals
         for (l: Variable in c.literals.map { it.variable }) {
-            //the entry must exist, because the variable is known
+            //the entry must exist, because the materials.getVariable is known
             this.occurences[l]!!.add(c)
         }
     }
@@ -79,7 +85,7 @@ open class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet
         return retu
     }
 
-    fun updateWatchedLiterals(v:Variable):Unit
+    fun updateWatchedLiterals(v: Variable):Unit
     {
         var occi = this.occurences[v]
         occi?.forEach{it.updateWatchedLiterals(v)}
@@ -111,8 +117,8 @@ open class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet
     }
 
 
-    fun getWatchedLiteralToClause():WatchedLiteralToClause {
-        assert(! ClauseWatchedLiterals.watchedLiteralsForUnitVariables)
+    fun getWatchedLiteralToClause(): WatchedLiteralToClause {
+        assert(!ClauseWatchedLiterals.watchedLiteralsForUnitVariables)
         var retu:WatchedLiteralToClause = WatchedLiteralToClause()
 
         for (clause in this.clausesWL) {
@@ -133,12 +139,12 @@ open class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet
     }
 
     /**
-     * Compares two clauseSets for their variable settings, and returns
+     * Compares two clauseSets for their materials.getVariable settings, and returns
      * true if equal
      */
     fun isSettingEqual(toCompare: ClauseSetWatchedLiterals): Boolean {
         for (v: Variable in this.occurences.keys) {
-            val pendant:Variable = toCompare.findVar(v.id) ?: return false
+            val pendant: Variable = toCompare.findVar(v.id) ?: return false
             if(pendant.setting != v.setting)
                 return false
         }

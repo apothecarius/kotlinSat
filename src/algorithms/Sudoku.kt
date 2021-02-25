@@ -1,3 +1,9 @@
+package algorithms
+
+import materials.ClauseSetWatchedLiterals
+import materials.ClauseWatchedLiterals
+import materials.Literal
+import materials.Variable
 import kotlin.test.fail
 
 typealias FieldPossibilities = Array<Variable>
@@ -43,6 +49,8 @@ private fun SudokuVariableSet.getSudokuField(blockIdx: Int, fieldIdx: Int, block
  * with the sat solver
  * The constructor can be given a set of fixed field assignments with both
  * x and y indices in [1,9]]
+ *
+ * TODO: Add functions for intuitive input (sudoku puzzle statement) and output (print result as integer array or string)
  */
 class Sudoku(fixedVars: Array<Array<Int>>) : ClauseSetWatchedLiterals(makeSudokuFormula(fixedVars)) {
     //TODO string based constructor or from a file
@@ -106,7 +114,7 @@ class Sudoku(fixedVars: Array<Array<Int>>) : ClauseSetWatchedLiterals(makeSudoku
                             val field: Array<Variable> = sequence {
                                 for (b: Int in 1..9) // what is assigned in this slot
                                 {
-                                    yield(Variable(Sudoku.makeVarId(x, y, b)))
+                                    yield(Variable(makeVarId(x, y, b)))
                                 }
                             }.toList().toTypedArray()
                             assert(field.size == 9)
@@ -173,7 +181,7 @@ class Sudoku(fixedVars: Array<Array<Int>>) : ClauseSetWatchedLiterals(makeSudoku
         }
 
         private fun ensureBlocksHaveEveryAssignment(vars: SudokuVariableSet): Sequence<ClauseWatchedLiterals> {
-            //val retu: MutableList<ClauseWatchedLiterals> = mutableListOf()
+            //val retu: MutableList<materials.ClauseWatchedLiterals> = mutableListOf()
 
             return do9ToPowerNTimes { assignment:Int,blockIdx:Int ->
 

@@ -1,10 +1,17 @@
+package materials
+
+
+enum class WatchedLiteralIterationScheme {
+    ToMiddle, SideBySide
+}
+
 class ClauseWatchedLiterals constructor(disjunction: Array<Literal>) : Clause(disjunction) {
     constructor (c: String, knownVariables: VariableSet) :
             this(codeToLiteralSet(c, knownVariables))
 
-    constructor(c: ClauseWatchedLiterals,vs:VariableSet) : this(c.literals.map { it:Literal -> Literal(vs.storeOrGet(it.variable.id),it.predicate) }.toTypedArray())
-    //constructor(c: Clause) : this(c.literals.map { it:Literal -> Literal(Variable(it.variable),it.predicate) }.toTypedArray())
-    constructor(l:Literal) : this(arrayOf(l))
+    constructor(c: ClauseWatchedLiterals, vs: VariableSet) : this(c.literals.map { it: Literal -> Literal(vs.storeOrGet(it.variable.id),it.predicate) }.toTypedArray())
+    //constructor(c: materials.Clause) : this(c.literals.map { it:materials.Literal -> materials.Literal(materials.Variable(it.materials.getVariable),it.materials.getPredicate) }.toTypedArray())
+    constructor(l: Literal) : this(arrayOf(l))
     constructor(cs: Map<Variable, Boolean>) : this(
             cs.map { it -> Pair(it.key, it.value) }.toTypedArray())
 
@@ -21,6 +28,14 @@ class ClauseWatchedLiterals constructor(disjunction: Array<Literal>) : Clause(di
          * the clause, if true on unset literals
          */
         var watchedLiteralsForUnitVariables: Boolean = true
+
+        /**
+         * Watched literals march over the clauses literals and there are two established schemes how this can be done
+         * Either both pointers start at either end of the clause and march towards the middle until they meet
+         * Or they start next to each other both moving forward.
+         */
+
+        val activeWLIterationScheme:WatchedLiteralIterationScheme = WatchedLiteralIterationScheme.ToMiddle
     }
 
     var watchedHead: Int = initialHead
@@ -50,7 +65,7 @@ class ClauseWatchedLiterals constructor(disjunction: Array<Literal>) : Clause(di
         assert(watchedTail >= 0)
     }
 
-    fun resetWatchedLiterals(): Unit {
+    fun resetWatchedLiterals() {
         // a better way might be feasible, like storing settings in a stack or
         // moving head and tail in a circular fashion
         this.watchedHead = initialHead
@@ -79,7 +94,7 @@ class ClauseWatchedLiterals constructor(disjunction: Array<Literal>) : Clause(di
                 //dont change an established state
                 return
             } else if (v.isUnset) {
-                //dont need to move away from an unset variable
+                //dont need to move away from an unset materials.getVariable
                 return
             }
         }
@@ -90,8 +105,8 @@ class ClauseWatchedLiterals constructor(disjunction: Array<Literal>) : Clause(di
             else -> return
         }
 
-        //would be nice to have this as dynamic variable
-        fun getMovingLiteral():Literal = this.literals[when (isMovingHead) {
+        //would be nice to have this as dynamic materials.getVariable
+        fun getMovingLiteral(): Literal = this.literals[when (isMovingHead) {
             true -> watchedHead
             false -> watchedTail
         }]

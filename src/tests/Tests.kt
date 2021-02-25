@@ -1,6 +1,21 @@
+package tests
+
+import materials.ClauseSet
+import materials.ClauseSetWatchedLiterals
+import materials.Literal
+import algorithms.*
+import materials.Variable
+import materials.VariableIdentifier
+import materials.VariableSetting
+import materials.makeVarIds
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import materials.predicate
+import materials.variable
+import support.Either
+import support.Main
+import support.readCnf
 import java.util.*
 import java.util.stream.IntStream
 import kotlin.test.assertEquals
@@ -18,25 +33,25 @@ class Tests{
     @Test
     fun testSolvers() = testSolvers(numTests = 100,numVars = 25,numClauses= 120,varStep = 10)
 
-    fun testSolvers(numTests:Int,numVars:Int,numClauses:Int,varStep:Int) {
+    private fun testSolvers(numTests:Int,numVars:Int,numClauses:Int,varStep:Int) {
         assert(numVars < 26)
 
-        val randy:Random = Random()
+        val randy = Random()
 
         val knownVars:List<VariableIdentifier> = makeVarIds(numVars)
 
         for (_iter:Int in 1..numTests) {
-            var boolCode:String = makeBoolCode(randy,knownVars,numClauses, varStep)
-            if (verbose) {
+            val boolCode:String = makeBoolCode(randy,knownVars,numClauses, varStep)
+            if (Main.verbose) {
                 println(boolCode)
             }
 
             val curClauseSetDpll = ClauseSet(boolCode)
-            val curClauseSetCdcl = ClauseSet(boolCode)//ClauseSetWatchedLiterals(boolCode)
+            val curClauseSetCdcl = ClauseSet(boolCode)//materials.ClauseSetWatchedLiterals(boolCode)
             val watchedLiteralClauseSet = ClauseSetWatchedLiterals(boolCode)
             val dpllResult:Boolean = dpllSAT(curClauseSetDpll)
             val cdclResult:Boolean = cdclSAT(curClauseSetCdcl)
-            val watchedLiteralTable:CdclTable = cdclSolve(watchedLiteralClauseSet)
+            val watchedLiteralTable: CdclTable = cdclSolve(watchedLiteralClauseSet)
             val watchedLiteralResult:Boolean = watchedLiteralClauseSet.isFulfilled
 
             val fail:Boolean = (dpllResult != cdclResult || dpllResult != watchedLiteralResult)
@@ -46,36 +61,36 @@ class Tests{
             {
                 //if formula is satisfied, then it must also be an implicant
                 //test that while we're here
-                val isImplicant = isImplicant(curClauseSetCdcl)
+                val isImplicant = Implicant.isImplicant(curClauseSetCdcl)
                 assertTrue(isImplicant)
 
 
                 //val cdclCopyTable:CdclTable = cdclSolve(watchedLiteralClauseSet)
-                val piNonWl = getPrimeImplicant(curClauseSetCdcl)
-                val piWithWl = getPrimeImplicantWithWatchedLiterals(watchedLiteralClauseSet,watchedLiteralTable)
+                val piNonWl = Implicant.getPrimeImplicant(curClauseSetCdcl)
+                val piWithWl = Implicant.getPrimeImplicantWithWatchedLiterals(watchedLiteralClauseSet, watchedLiteralTable)
 
 
                 val clWithPI = arrayOf(curClauseSetCdcl,watchedLiteralClauseSet)
-                //clear all variable settings
-                clWithPI.forEach { it.getPresentVariables().forEach { it.unset() }}
-                //apply variable setting to primeImplicant
-                arrayOf(piNonWl, piWithWl).forEach { it.forEach{lit:Literal -> lit.first.setTo(lit.second)} }
+                //clear all materials.getVariable settings
+                clWithPI.forEach {clp ->  clp.getPresentVariables().forEach {cv -> cv.unset() }}
+                //apply materials.getVariable setting to primeImplicant
+                arrayOf(piNonWl, piWithWl).forEach { it.forEach{lit: Literal -> lit.first.setTo(lit.second)} }
                 //verify, that result is indeed primeImplicant
                 assertFalse("ERROR: Prematurely returned PrimeImplicant",
-                        clWithPI.any { getNonPrimeImplicantVariable(it).let{freeVar ->
+                        clWithPI.any { Implicant.getNonPrimeImplicantVariable(it).let{ freeVar ->
                             freeVar is Either.Left && freeVar.value != null}})
             }
         }
     }
 
 
-    fun makeBoolCode(numVars: Int, numClauses: Int, varStep: Int):String {
+    private fun makeBoolCode(numVars: Int, numClauses: Int, varStep: Int):String {
         return makeBoolCode(Random(System.currentTimeMillis()), makeVarIds(numVars), numClauses, varStep)
     }
-    fun makeBoolCode(randy: Random, knownVars:List<VariableIdentifier>,numClauses:Int,varStep:Int): String {
-        var clauseList:MutableList<String> = mutableListOf()
+    private fun makeBoolCode(randy: Random, knownVars:List<VariableIdentifier>, numClauses:Int, varStep:Int): String {
+        val clauseList:MutableList<String> = mutableListOf()
         for (clauseIter: Int in 1..numClauses) {
-            var varList:MutableList<String> = mutableListOf()
+            val varList:MutableList<String> = mutableListOf()
             var varsIter:Int = 0
             while(true) {
                 varsIter += Math.abs(randy.nextInt() % varStep)+1
@@ -96,7 +111,7 @@ class Tests{
     }
 
 
-    fun isLiteralSetDifferent(setA:List<Literal>,setB:List<Literal>):Boolean
+    fun isLiteralSetDifferent(setA:List<Literal>, setB:List<Literal>):Boolean
     {
         if (setA.size != setB.size) {
             return true
@@ -106,8 +121,8 @@ class Tests{
 
         while (itA.hasNext()) {
             assert(itB.hasNext())
-            var a:Literal = itA.next()
-            var b:Literal = itB.next()
+            var a: Literal = itA.next()
+            var b: Literal = itB.next()
             if (a.variable.id != b.variable.id) {
                 return true
             }
@@ -128,8 +143,8 @@ class Tests{
         val fehlerKlaus1 = ClauseSetWatchedLiterals(fehlerKlausCode)
         val fehlerKlaus2 = ClauseSetWatchedLiterals(fehlerKlausCode)
         cdclSAT(fehlerKlaus1)
-        println(getPrimeImplicant(fehlerKlaus1))
-        println(getPrimeImplicantWithWatchedLiterals(fehlerKlaus2))
+        println(Implicant.getPrimeImplicant(fehlerKlaus1))
+        println(Implicant.getPrimeImplicantWithWatchedLiterals(fehlerKlaus2))
 
         println(fehlerKlaus1.countSetVars())
         println(fehlerKlaus2.countSetVars())
@@ -143,8 +158,8 @@ class Tests{
         val fehlerKlaus2 = ClauseSetWatchedLiterals(fehlerKlausCode);
         cdclSAT(fehlerKlaus1)
 
-        println(getPrimeImplicant(fehlerKlaus1))
-        println(getPrimeImplicantWithWatchedLiterals(fehlerKlaus2))
+        println(Implicant.getPrimeImplicant(fehlerKlaus1))
+        println(Implicant.getPrimeImplicantWithWatchedLiterals(fehlerKlaus2))
 
         println(fehlerKlaus1.countSetVars())
         println(fehlerKlaus2.countSetVars())
@@ -159,17 +174,17 @@ class Tests{
 
         cdclSAT(fehlerKlaus1)
         fehlerKlaus1.printVarSettings()
-        println(getPrimeImplicant(fehlerKlaus1))
+        println(Implicant.getPrimeImplicant(fehlerKlaus1))
         println()
 
         val table = cdclSolve(fehlerKlaus2)
         fehlerKlaus2.printVarSettings()
-        println(getPrimeImplicantWithWatchedLiterals(fehlerKlaus2,table))
+        println(Implicant.getPrimeImplicantWithWatchedLiterals(fehlerKlaus2, table))
         println()
 
         val table3 = cdclSolve(fehlerKlaus3)
         fehlerKlaus3.printVarSettings()
-        println(getPrimeImplicant(fehlerKlaus3))
+        println(Implicant.getPrimeImplicant(fehlerKlaus3))
     }
 
 
@@ -184,39 +199,39 @@ class Tests{
 
         cdclSAT(fehlerKlaus1)
         fehlerKlaus1.printVarSettings()
-        println(getPrimeImplicant(fehlerKlaus1))
+        println(Implicant.getPrimeImplicant(fehlerKlaus1))
         println()
 
         val table = cdclSolve(fehlerKlaus2)
         fehlerKlaus2.printVarSettings()
-        println(getPrimeImplicantWithWatchedLiterals(fehlerKlaus2,table))
+        println(Implicant.getPrimeImplicantWithWatchedLiterals(fehlerKlaus2, table))
         println()
 
         val table3 = cdclSolve(fehlerKlaus3)
         fehlerKlaus3.printVarSettings()
-        println(getPrimeImplicant(fehlerKlaus3))
+        println(Implicant.getPrimeImplicant(fehlerKlaus3))
     }
 
     @Test
     fun testBackbone():Unit
     {
         val fa = ClauseSetWatchedLiterals("a & a|b|c")
-        val bba = getBackboneKaiKue(fa)//has backbone of A
-        var success:Boolean = bba.size == 1 && bba.contains(Literal(fa.findVariable("a")!!,true))
+        val bba = Backbone.getBackboneKaiKue(fa)//has backbone of A
+        var success:Boolean = bba.size == 1 && bba.contains(Literal(fa.findVariable("a")!!, true))
         assert(success)
 
         val fb = ClauseSetWatchedLiterals("!a & a|b")
-        val bbb = getBackboneKaiKue(fb)// has backbone of !a,b
-        success = bbb.size == 2 && bbb.contains(Literal(fb.findVariable("a")!!,false)) &&
-                bbb.contains(Literal(fb.findVariable("b")!!,true))
+        val bbb = Backbone.getBackboneKaiKue(fb)// has backbone of !a,b
+        success = bbb.size == 2 && bbb.contains(Literal(fb.findVariable("a")!!, false)) &&
+                bbb.contains(Literal(fb.findVariable("b")!!, true))
         assert(success)
 
         val fc = ClauseSetWatchedLiterals("D|!G|!J & D|!I|J & F|!J|!K & F|I & !F|!J & B|!F|!I & F|!J & D|!G & !F|G & !F|!G & !F|!J & !D|!F|!G|!K & !F|!G|K & M|N")
-        val bbc = getBackboneKaiKue(fc)//has a backbone of [(D, true), (F, false), (I, true), (J, false)]
-        success = bbc.size == 4 && bbc.contains(Literal(fc.findVariable("D")!!,true)) &&
-                bbc.contains(Literal(fc.findVariable("F")!!,false)) &&
-                bbc.contains(Literal(fc.findVariable("I")!!,true)) &&
-                bbc.contains(Literal(fc.findVariable("J")!!,false))
+        val bbc = Backbone.getBackboneKaiKue(fc)//has a backbone of [(D, true), (F, false), (I, true), (J, false)]
+        success = bbc.size == 4 && bbc.contains(Literal(fc.findVariable("D")!!, true)) &&
+                bbc.contains(Literal(fc.findVariable("F")!!, false)) &&
+                bbc.contains(Literal(fc.findVariable("I")!!, true)) &&
+                bbc.contains(Literal(fc.findVariable("J")!!, false))
         assert(success)
 
 
@@ -234,8 +249,8 @@ class Tests{
 
             println("Finding backbone for formula: ")
             println(klaus)
-            val bb = getBackboneKaiKue(klaus,false)
-            val bbc = getBackboneKaiKue(klaus,true)
+            val bb = Backbone.getBackboneKaiKue(klaus, false)
+            val bbc = Backbone.getBackboneKaiKue(klaus, true)
             if (bb != bbc) {
                 println("mismatch in solver optimization")
                 println("With optimization: "+bbc)
@@ -257,28 +272,28 @@ class Tests{
     fun testImplicantOld()
     {
         val k = ClauseSet("a & b|c")
-        val varA:Variable = k.getPresentVariables().find { it.id == "a" }!!
-        val varB:Variable =k.getPresentVariables().find { it.id == "b" }!!
-        val varC:Variable =k.getPresentVariables().find { it.id == "c" }!!
+        val varA: Variable = k.getPresentVariables().find { it.id == "a" }!!
+        val varB: Variable =k.getPresentVariables().find { it.id == "b" }!!
+        val varC: Variable =k.getPresentVariables().find { it.id == "c" }!!
 
         varA.setTo(VariableSetting.True)
         assertFalse( k.isFulfilled)
         assertFalse( k.isEmpty)
-        assertFalse( isImplicant(k))
-        assertFalse( isPrimeImplicant(k))
+        assertFalse(Implicant.isImplicant(k))
+        assertFalse(Implicant.isPrimeImplicant(k))
 
         varB.setTo(true)
         assertTrue(k.isFulfilled)
-        assertTrue(isImplicant(k))
-        assertTrue( isPrimeImplicant(k))
+        assertTrue(Implicant.isImplicant(k))
+        assertTrue(Implicant.isPrimeImplicant(k))
 
         varC.setTo(true)
-        assertTrue(isImplicant(k))
-        assertTrue(!isPrimeImplicant(k))
+        assertTrue(Implicant.isImplicant(k))
+        assertTrue(!Implicant.isPrimeImplicant(k))
 
         varC.setTo(false)
-        assertTrue(isImplicant(k))
-        assertTrue(! isPrimeImplicant(k))
+        assertTrue(Implicant.isImplicant(k))
+        assertTrue(!Implicant.isPrimeImplicant(k))
 
         return
     }
@@ -360,7 +375,7 @@ class Tests{
     @Test
     fun testToStringReflexivity()
     {
-        val code:String = "a|b & !b|c & c|!d"
+        val code = "a|b & !b|c & c|!d"
         val formula = ClauseSet(code)
         val formulaWl = ClauseSetWatchedLiterals(code)
 
@@ -372,10 +387,10 @@ class Tests{
     fun bombTest()
     {
         val formula = readCnf("probFiles/smallSatBomb.cnf")
-        val backbone = getBackboneIntersections(formula)
+        val backbone = Backbone.getBackboneIntersections(formula)
         val expectedBackbone:List<Int> = listOf(-215, -205, 131, 138, 143, 204, 208, 210 ,243)
         assertEquals(9,backbone.size)
-        for (lit:Literal in backbone) {
+        for (lit: Literal in backbone) {
             val asInt = lit.first.id.toInt() * if(lit.predicate) 1 else -1
             assertTrue(expectedBackbone.contains(asInt))
         }
@@ -386,23 +401,23 @@ class Tests{
     @Test
     fun testQuickBackbone()
     {
-        val numTests:Int = 40
-        val numVars:Int = 30
-        val numClauses:Int = 100
-        val varStep:Int = 16
+        val numTests = 40
+        val numVars = 30
+        val numClauses = 100
+        val varStep = 16
 
         val randy = Random()
 
-        var knownVars = makeVarIds(numVars)
-        var numFails:Int = 0
-        var runTests:Int = 0
+        val knownVars = makeVarIds(numVars)
+        var numFails = 0
+        var runTests = 0
 
-        var sumMsecKaiKueSlow:Int = 0
-        var sumMsecKaiKueFast:Int = 0
-        var sumMsecIntersect:Int = 0
+        var sumMsecKaiKueSlow = 0
+        var sumMsecKaiKueFast = 0
+        var sumMsecIntersect = 0
 
-        var numKaiKueRuns:Int = 0
-        var numIntersectRuns:Int = 0
+        var numKaiKueRuns = 0
+        var numIntersectRuns = 0
 
         for (_iter:Int in 1..numTests) {
             val code:String = makeBoolCode(randy,knownVars,numClauses,varStep)
@@ -412,17 +427,17 @@ class Tests{
                 runTests++
 
                 val t1 = System.currentTimeMillis()
-                val kaiKueSlow: Set<Literal> = getBackboneKaiKue(ClauseSetWatchedLiterals(code), false)
-                val kaiKueSlowRuns = numCdclRuns
+                val kaiKueSlow: Set<Literal> = Backbone.getBackboneKaiKue(ClauseSetWatchedLiterals(code), false)
+                val kaiKueSlowRuns = algorithms.Backbone.numCdclRuns
                 val t2 = System.currentTimeMillis()
 
                 val t3 = System.currentTimeMillis()
-                val kaiKue: Set<Literal> = getBackboneKaiKue(ClauseSetWatchedLiterals(code))
-                val kaiKueRuns = numCdclRuns
+                val kaiKue: Set<Literal> = Backbone.getBackboneKaiKue(ClauseSetWatchedLiterals(code))
+                val kaiKueRuns = Backbone.numCdclRuns
                 val t4 = System.currentTimeMillis()
                 val t5 = System.currentTimeMillis()
-                val inters: Set<Literal> = getBackboneIntersections(ClauseSetWatchedLiterals(code))
-                val intersRuns = numCdclRuns
+                val inters: Set<Literal> = Backbone.getBackboneIntersections(ClauseSetWatchedLiterals(code))
+                val intersRuns = Backbone.numCdclRuns
                 val t6 = System.currentTimeMillis()
 
                 sumMsecKaiKueSlow += (t2-t1).toInt()
@@ -445,7 +460,7 @@ class Tests{
     @Test
     fun activityInitializationTest()
     {
-        val form:ClauseSetWatchedLiterals = ClauseSetWatchedLiterals("a|b|c & b|!a & !c|a | d")
+        val form: ClauseSetWatchedLiterals = ClauseSetWatchedLiterals("a|b|c & b|!a & !c|a | d")
         for (vari: Variable in form.getPresentVariables()) {
             assertEquals(when(vari.id){
                 "a" -> 3f
@@ -454,7 +469,7 @@ class Tests{
                 "d" -> 1f
                 else -> {
                     fail()
-                    0
+                    0f
                 }
             },vari.activity)
         }
@@ -474,46 +489,46 @@ class Tests{
     fun sudokuTest()
     {
         val sudo = Sudoku(arrayOf(
-                arrayOf(1,1,5),
-                arrayOf(1,3,9),
-                arrayOf(1,7,4),
-                arrayOf(2,1,7),
-                arrayOf(2,3,8),
-                arrayOf(2,4,3),
-                arrayOf(2,6,4),
-                arrayOf(2,7,9),
-                arrayOf(3,1,6),
-                arrayOf(3,3,1),
-                arrayOf(3,7,7),
-                arrayOf(3,8,3),
-                arrayOf(4,1,4),
-                arrayOf(4,2,6),
-                arrayOf(4,3,2),
-                arrayOf(4,4,5),
-                arrayOf(5,1,3),
-                arrayOf(5,2,8),
-                arrayOf(5,3,5),
-                arrayOf(5,4,7),
-                arrayOf(5,5,2),
-                arrayOf(5,7,6),
-                arrayOf(5,8,4),
-                arrayOf(5,9,9),
-                arrayOf(6,1,1),
-                arrayOf(6,3,7),
-                arrayOf(6,4,4),
-                arrayOf(6,6,8),
-                arrayOf(6,7,2),
-                arrayOf(7,1,2),
-                arrayOf(7,4,1),
-                arrayOf(7,9,4),
-                arrayOf(8,3,3),
-                arrayOf(8,5,4),
-                arrayOf(8,8,8),
-                arrayOf(8,9,7),
-                arrayOf(9,2,7),
-                arrayOf(9,5,5),
-                arrayOf(9,6,3),
-                arrayOf(9,9,6)
+                arrayOf(1, 1, 5),
+                arrayOf(1, 3, 9),
+                arrayOf(1, 7, 4),
+                arrayOf(2, 1, 7),
+                arrayOf(2, 3, 8),
+                arrayOf(2, 4, 3),
+                arrayOf(2, 6, 4),
+                arrayOf(2, 7, 9),
+                arrayOf(3, 1, 6),
+                arrayOf(3, 3, 1),
+                arrayOf(3, 7, 7),
+                arrayOf(3, 8, 3),
+                arrayOf(4, 1, 4),
+                arrayOf(4, 2, 6),
+                arrayOf(4, 3, 2),
+                arrayOf(4, 4, 5),
+                arrayOf(5, 1, 3),
+                arrayOf(5, 2, 8),
+                arrayOf(5, 3, 5),
+                arrayOf(5, 4, 7),
+                arrayOf(5, 5, 2),
+                arrayOf(5, 7, 6),
+                arrayOf(5, 8, 4),
+                arrayOf(5, 9, 9),
+                arrayOf(6, 1, 1),
+                arrayOf(6, 3, 7),
+                arrayOf(6, 4, 4),
+                arrayOf(6, 6, 8),
+                arrayOf(6, 7, 2),
+                arrayOf(7, 1, 2),
+                arrayOf(7, 4, 1),
+                arrayOf(7, 9, 4),
+                arrayOf(8, 3, 3),
+                arrayOf(8, 5, 4),
+                arrayOf(8, 8, 8),
+                arrayOf(8, 9, 7),
+                arrayOf(9, 2, 7),
+                arrayOf(9, 5, 5),
+                arrayOf(9, 6, 3),
+                arrayOf(9, 9, 6)
         ))
         cdclSAT(sudo)
         //TODO verify sudoku conditions. Iterate over true assigned vars by coordinate
