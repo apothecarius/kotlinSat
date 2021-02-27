@@ -4,6 +4,7 @@ import materials.ClauseSetWatchedLiterals
 import materials.ClauseWatchedLiterals
 import materials.Literal
 import materials.Variable
+import support.assert
 
 typealias FieldPossibilities = Array<Variable>
 /**
@@ -18,9 +19,9 @@ typealias SudokuVariableSet = Array<Array<FieldPossibilities>>
  * Blocktype can be in [1..3] for column,row or square
  */
 private fun SudokuVariableSet.getSudokuFieldCoord(blockIdx: Int, fieldIdx: Int, blockType: Int):Pair<Int,Int> {
-    assert(blockIdx in 0..8)
-    assert(fieldIdx in 0..8)
-    assert(blockType in 1..3)
+    assert { blockIdx in 0..8 }
+    assert { fieldIdx in 0..8 }
+    assert { blockType in 1..3 }
 
     return when (blockType) {
         1 -> Pair(blockIdx, fieldIdx)
@@ -86,11 +87,10 @@ class Sudoku(fixedVars: Array<Array<Int>>) : ClauseSetWatchedLiterals(makeSudoku
         private fun fixAssignments(fixedVars: Array<Array<Int>>, knownVars: SudokuVariableSet): Sequence<ClauseWatchedLiterals> {
             return sequence {
                 for (fix in fixedVars) {
-                    assert(fix.size == 3)
-                    { "Assignments must have 3 numbers between 1 and 9" }
+                    assert({ fix.size == 3 },"Assignments must have 3 numbers between 1 and 9" )
+
                     fix.forEach {
-                        assert(it in 1..9)
-                        { "Assignments must be between 1 and 9" }
+                        assert({ it in 1..9 },"Assignments must be between 1 and 9" )
                     }
                     //values are given as [1..9]
                     val theVar = knownVars[fix[0] - 1][fix[1] - 1][fix[2] - 1]
@@ -116,15 +116,15 @@ class Sudoku(fixedVars: Array<Array<Int>>) : ClauseSetWatchedLiterals(makeSudoku
                                     yield(Variable(makeVarId(x, y, b)))
                                 }
                             }.toList().toTypedArray()
-                            assert(field.size == 9)
+                            assert { field.size == 9 }
                             yield(field)
                         }
                     }.toList().toTypedArray()
-                    assert(column.size == 9)
+                    assert { column.size == 9 }
                     yield(column)
                 }
             }.toList().toTypedArray()
-            assert(matrix.size == 9)
+            assert { matrix.size == 9 }
             return matrix
         }
 

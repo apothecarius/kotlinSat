@@ -1,6 +1,7 @@
 package materials
 
 import algorithms.WatchedLiteralToClause
+import support.assert
 
 /**
  * This class extends ordinary clauses to have watched literals, which
@@ -118,7 +119,7 @@ open class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet
 
 
     fun getWatchedLiteralToClause(): WatchedLiteralToClause {
-        assert(!ClauseWatchedLiterals.watchedLiteralsForUnitVariables)
+        assert{ !ClauseWatchedLiterals.watchedLiteralsForUnitVariables }
         var retu:WatchedLiteralToClause = WatchedLiteralToClause()
 
         for (clause in this.clausesWL) {

@@ -1,5 +1,7 @@
 package materials
 
+import support.assert
+
 
 enum class WatchedLiteralIterationScheme {
     ToMiddle, SideBySide
@@ -62,7 +64,7 @@ class ClauseWatchedLiterals constructor(disjunction: Array<Literal>) : Clause(di
     init {
 
         //crash if no literals given
-        assert(watchedTail >= 0)
+        assert { watchedTail >= 0 }
     }
 
     fun resetWatchedLiterals() {
@@ -76,7 +78,7 @@ class ClauseWatchedLiterals constructor(disjunction: Array<Literal>) : Clause(di
         this.updateWatchedLiterals(this.literals[this.watchedTail].variable)
 
         if (activeWLIterationScheme == WatchedLiteralIterationScheme.ToMiddle) {
-            assert(this.watchedHead <= this.watchedTail)
+            assert { this.watchedHead <= this.watchedTail }
         }
     }
 
@@ -132,7 +134,7 @@ class ClauseWatchedLiterals constructor(disjunction: Array<Literal>) : Clause(di
                                 !(wanderingWatched.isUnset && this.watchedHead != this.watchedTail)
                 }
             } else {
-                assert(activeWLIterationScheme == WatchedLiteralIterationScheme.ToMiddle)
+                assert { activeWLIterationScheme == WatchedLiteralIterationScheme.ToMiddle }
                 return when (activeWLIterationScheme) {
                     WatchedLiteralIterationScheme.ToMiddle ->
                         this.watchedHead != this.watchedTail &&
@@ -182,7 +184,7 @@ class ClauseWatchedLiterals constructor(disjunction: Array<Literal>) : Clause(di
      * multiple candidates with this condition exist
      */
     fun getPrimeLiteral(): Literal? {
-        assert(!watchedLiteralsForUnitVariables)
+        assert { !watchedLiteralsForUnitVariables }
         if (this.watchedHead == this.watchedTail) {
             return this.literals[this.watchedTail]
         } else {
@@ -195,19 +197,19 @@ class ClauseWatchedLiterals constructor(disjunction: Array<Literal>) : Clause(di
     // determined in O(1)
     override val isUnit: Boolean
         get() {
-            assert(watchedLiteralsForUnitVariables)
+            assert { watchedLiteralsForUnitVariables }
             return this.watchedHead == this.watchedTail &&
                     this.literals[this.watchedTail].isUnset
         }
     override val isSatisfied: Boolean
         get() {
-            //assert(watchedLiteralsForUnitVariables)
+            //assert{watchedLiteralsForUnitVariables}
             return this.literals[watchedHead].becomesTrue() ||
                     this.literals[watchedTail].becomesTrue()
         }
     override val isEmpty: Boolean
         get() {
-            //assert(watchedLiteralsForUnitVariables)
+            //assert{watchedLiteralsForUnitVariables}
             return this.watchedHead == this.watchedTail &&
                     this.literals[this.watchedTail].becomesFalse()
         }

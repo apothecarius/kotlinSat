@@ -1,6 +1,6 @@
 package algorithms
 import materials.*
-import support.Main
+import support.assert
 
 
 object Backbone{
@@ -16,7 +16,9 @@ object Backbone{
         //count CDCL runs for testing purposes
         numCdclRuns = 0
 
-        assert(cs.getPresentVariables().all { it.isUnset })
+        assert{
+            cs.getPresentVariables().all { it.isUnset }
+        }
         cs.resetVars()
         val retu = mutableSetOf<Literal>()
         val skippedVars = mutableSetOf<Variable>()
@@ -54,9 +56,7 @@ object Backbone{
                 continue
             }
             val changedFormula: ClauseSetWatchedLiterals = makeAdjustedClauseSet(cs,toCheck)
-            if (Main.verbose) {
-                println("Doing backbone test for materials.getVariable "+toCheck.first.id)
-            }
+
             changedFormula.resetVars()
             val alternativeImplicant:CdclTable = cdclSolve(changedFormula)
             numCdclRuns++

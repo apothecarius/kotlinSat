@@ -1,6 +1,7 @@
 package materials
 
 import support.Heap
+import support.assert
 
 /**
  * A clauseset is the conjunction of multiple clauses
@@ -34,7 +35,7 @@ open class ClauseSet(c:Array<Clause>)
         } while(!toAssign.isUnset)
 
         //assigned variables might be returned, have to be skipped
-        assert(toAssign.isUnset)
+        assert { toAssign.isUnset }
         toAssign.setTo(!toAssign.previousSetting)
         return toAssign
     }

@@ -2,10 +2,8 @@ package test
 
 import support.Heap
 import materials.Variable
-import org.junit.Assert.*
-import org.junit.Test
-import java.util.*
-//import kotlin.test.*
+import kotlin.random.Random
+import kotlin.test.*
 
 class HeapTests{
     @Test
@@ -43,9 +41,8 @@ class HeapTests{
     fun largeInsertionOrderTest()
     {
         val h = Heap<Int>()
-        val randy = Random()
         for (i in 1..100) {
-            val v = randy.nextInt() % 200
+            val v = Random.nextInt() % 200
             h.add(v)
         }
 
@@ -56,10 +53,9 @@ class HeapTests{
     fun largeInsertionOrderVariableTest()
     {
         val h = Heap<Variable>()
-        val randy = Random()
         for (i in 1..1000) {
             val v = Variable(i.toString())
-            v.activity = randy.nextFloat()*10000f
+            v.activity = Random.nextFloat()*10000f
             h.add(v)
         }
 
@@ -70,17 +66,16 @@ class HeapTests{
     fun largeInsertionOrderVariableTestWithChanges()
     {
         val h = Heap<Variable>()
-        val randy = Random()
-        val vars:MutableList<Variable> = LinkedList()
+        val vars:MutableList<Variable> = mutableListOf()
         for (i in 1..1000) {
             val v = Variable(i.toString())
-            v.activity = randy.nextFloat()*10000f
+            v.activity = Random.nextFloat()*10000f
             vars.add(v)
             h.add(v)
         }
         assertTrue(verifyMonotonicity(h))
         for (v in vars) {
-            v.activity = randy.nextFloat()*10000f
+            v.activity = Random.nextFloat()*10000f
         }
         h.reorder()
 
@@ -141,11 +136,10 @@ class HeapTests{
     fun unassignedVariablesComeFirstTest()
     {
         val h: Heap<Variable> = Heap()
-        val randy = Random()
         var hasAssi:Boolean = true
         for (i in 1..1000) {
             val v = Variable(i.toString())
-            v.activity = randy.nextFloat()*10000f
+            v.activity = Random.nextFloat()*10000f
             if (hasAssi) {
                 v.setTo(true)
             }

@@ -1,7 +1,7 @@
 package algorithms
 
 import materials.*
-import support.Main
+import support.assert
 
 data class CdclTableEntry(
         val level:Int,
@@ -120,7 +120,7 @@ fun Resolvent.getAnyVariable(): Variable? =
         }
 
 
-sealed class Reason private constructor ()
+sealed class Reason constructor ()
 {
     class InUnitClause(c: Clause):Reason()
     {
@@ -186,13 +186,8 @@ fun cdclSolve(clauseSet: ClauseSet, variablePriorityQueue:Map<Variable,Boolean>?
             if (clauseSet is ClauseSetWatchedLiterals) {
                 clauseSet.resetAllWatchedLiterals()
             }
-            assert( !clauseSet.isFulfilled )
+            assert { !clauseSet.isFulfilled }
             if (level == 0) {
-                if (Main.verbose) {
-                    println(clauseSet.toString()+" error in "+
-                            clauseSet.getEmptyClause().toString()+" -> UNSAT")
-                    table.print()
-                }
                 return table //unresolvable conflict -> UNSAT
             }
 
@@ -202,10 +197,7 @@ fun cdclSolve(clauseSet: ClauseSet, variablePriorityQueue:Map<Variable,Boolean>?
             // a set of (variables+materials.getPredicate) which is resolved with other reason clauses
             // prefixed variables which are set by decision are regularly extracted, until
             // resolvent is empty
-            if (Main.verbose) {
-                println("Conflict in $emptyClause , doing backtrack")
-                table.print()
-            }
+
             var resolvent:Resolvent = makeResolvent(emptyClause)
             //a variablesSet which is learned at the end
             var decidedConflictingVars:Resolvent = makeResolvent()//takes the decided variables out of the resolvent
@@ -219,15 +211,12 @@ fun cdclSolve(clauseSet: ClauseSet, variablePriorityQueue:Map<Variable,Boolean>?
                 //ended
                 var unitVar: Variable = resolvent.getAnyVariable() ?: break //"elvis operator"
                 val reason:Reason = table.findReason(unitVar)!!
-                assert( reason is Reason.InUnitClause)
+                assert{ reason is Reason.InUnitClause }
                 if(reason is Reason.InUnitClause)
                     resolvent.resolve(reason.reasonClause,unitVar)
             }
             if (decidedConflictingVars.isEmpty()) {
                 //conflict has no decided reason, so tautologically unsatisfiable
-                if (Main.verbose) {
-                    println("Found an unresolvable conflict -> UNSAT")
-                }
                 return table
             }
             val resolventClause: Clause =
@@ -236,9 +225,6 @@ fun cdclSolve(clauseSet: ClauseSet, variablePriorityQueue:Map<Variable,Boolean>?
                         is ClauseSet -> Clause(decidedConflictingVars)
                         else -> null //syntactically necessary
                     }!!
-            if (Main.verbose) {
-                println("Learning: $resolventClause")
-            }
             clauseSet.addResolvent(resolventClause)
             level--
             val affectedVariables = table.backtrackTo(level)
@@ -252,11 +238,6 @@ fun cdclSolve(clauseSet: ClauseSet, variablePriorityQueue:Map<Variable,Boolean>?
             }
         }
         else if (clauseSet.isFulfilled) {
-
-            if (Main.verbose) {
-                table.print()
-                println("SAT")
-            }
             return table //found solution -> SAT
         }
         else { //do decision

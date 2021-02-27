@@ -1,4 +1,7 @@
 package materials
+
+import support.assert
+
 typealias VariableIdentifier = String
 enum class VariableSetting {True,False,Unset}
 fun VariableSetting.getOpposite(): VariableSetting
@@ -16,7 +19,7 @@ fun makeVarIds(numVars: Int): List<VariableIdentifier> {
     var retu = mutableListOf<VariableIdentifier>()
     for (i: Int in 64..64 + numVars) {
         var ic: VariableIdentifier = i.toString()
-        assert(ic.isNotBlank())
+        assert{ ic.isNotBlank() }
         retu.add(ic)
     }
     return retu
@@ -37,7 +40,7 @@ class Variable constructor(c: VariableIdentifier) : Comparable<Variable> {
     var id: VariableIdentifier = c
 
     init {
-        assert(id.isNotBlank())
+        assert{ id.isNotBlank() }
     }
 
     var setting: VariableSetting = VariableSetting.Unset

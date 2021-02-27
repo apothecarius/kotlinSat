@@ -3,7 +3,7 @@ package algorithms
 import materials.*
 import materials.ClauseWatchedLiterals.Companion.activeWLIterationScheme
 import support.Either
-import support.Main
+import support.assert
 
 /*
 These functions work on (partial) solvings of clauseSet (some of its variables
@@ -135,7 +135,7 @@ object Implicant {
     {
         if(clauseSet.isFresh)
             cdclSAT(clauseSet)
-        assert(clauseSet.isFulfilled)
+        assert { clauseSet.isFulfilled }
         val originalSetting:Set<Literal> = clauseSet.getVariableSetting()
         if (clauseSet is ClauseSetWatchedLiterals) {
             ClauseWatchedLiterals.watchedLiteralsForUnitVariables = false
@@ -183,12 +183,12 @@ object Implicant {
 
             if (activeWLIterationScheme == WatchedLiteralIterationScheme.ToMiddle)
             {
-                assert(checkedClause.watchedHead <= checkedClause.watchedTail)
+                assert { checkedClause.watchedHead <= checkedClause.watchedTail }
             }
             checkedClause.updateWatchedLiterals(changedLiteral.variable)
             if (activeWLIterationScheme == WatchedLiteralIterationScheme.ToMiddle)
             {
-                assert(checkedClause.watchedHead <= checkedClause.watchedTail)
+                assert { checkedClause.watchedHead <= checkedClause.watchedTail }
             }
 
             //order of cases as in paper
@@ -196,7 +196,7 @@ object Implicant {
             {
                 //found a new literal, so update literalToClause map
                 val curWatcheds = checkedClause.getBothWatchedLiterals()
-                assert(curWatcheds.second != null)
+                assert { curWatcheds.second != null }
                 var nuWatched:Literal =
                         if (prevWatcheds.first == curWatcheds.first)
                         {
@@ -206,26 +206,25 @@ object Implicant {
                             curWatcheds.first
                         }else
                         {
-                            assert(false)
+                            assert { false }
                             curWatcheds.first
                         }
 
                 lit2clause.put(nuWatched,checkedClause)
-                assert(checkedClause.isSatisfied)
+                assert { checkedClause.isSatisfied }
                 return false
             } else
             {
                 //literal is the last remaining
                 //also remove the other reference, to not touch checkedclause again unnecessarily
                 lit2clause.remove(checkedClause.getPrimeLiteral()!!,checkedClause)
-                //assert(checkedClause.isSatisfied)
+                //assert{checkedClause.isSatisfied}
                 return true
             }
         }
         //paper passes C and M, but C is never used and the relevant part of M is in the variables in the clauses in W
         fun impliedW(l:Literal,requiredLiterals:MutableSet<Literal>,literalToClause:WatchedLiteralToClause)
         {
-            if (Main.verbose) {println("w: $l")}
             //prevent concurrentmodificationException by copying
             val occurences = literalToClause.get(l).toList()
             for (clause in occurences)
@@ -237,12 +236,12 @@ object Implicant {
                         continue
                     }
                     var newPrimeLiteral:Literal = clause.getPrimeLiteral()!!
-                    //assert(!requiredLiterals.contains(l))
-                    //assert(newPrimeLiteral == l)
+                    //assert{!requiredLiterals.contains(l)}
+                    //assert{newPrimeLiteral == l}
                     requiredLiterals.add(newPrimeLiteral)
                     //have to give the materials.getVariable its setting back, as it is now assumed that it must have this setting
                     l.first.setTo(l.predicate)
-                    assert(clause.isSatisfied)
+                    assert { clause.isSatisfied }
                 }
             }
         }
@@ -261,9 +260,6 @@ object Implicant {
 
         //prepare the clauseset to be able to reuse the clauseset object, I cant just remove falsy variables
         //clauseSet.removeFalsyVariables() //TODO cant just remove falsy variables, if I want ot reuse the clauseSet to calculate a backbone
-        if (Main.verbose) {
-            println("~>"+clauseSet.toString())
-        }
         clauseSet.prepareWatchedLiteralsForImplicants()
 
 

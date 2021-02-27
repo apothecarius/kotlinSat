@@ -8,14 +8,14 @@ import materials.Variable
 import materials.VariableIdentifier
 import materials.VariableSetting
 import materials.makeVarIds
-import org.junit.Assert.*
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.*
 import materials.predicate
 import materials.variable
 import support.Either
 import support.Main
 import support.readCnf
-import java.util.*
+import kotlin.random.Random
 
 /**
  * create random clausesets and compare the result of DPLL and CDCL solvers
@@ -30,14 +30,13 @@ class Tests{
     fun testSolvers() = testSolvers(numTests = 100,numVars = 25,numClauses= 120,varStep = 10)
 
     private fun testSolvers(numTests:Int,numVars:Int,numClauses:Int,varStep:Int) {
-        assert(numVars < 26)
+        assertTrue(numVars < 26)
 
-        val randy = Random()
 
         val knownVars:List<VariableIdentifier> = makeVarIds(numVars)
 
         for (_iter:Int in 1..numTests) {
-            val boolCode:String = makeBoolCode(randy,knownVars,numClauses, varStep)
+            val boolCode:String = makeBoolCode(knownVars,numClauses, varStep)
             if (Main.verbose) {
                 println(boolCode)
             }
@@ -72,29 +71,29 @@ class Tests{
                 //apply materials.getVariable setting to primeImplicant
                 arrayOf(piNonWl, piWithWl).forEach { it.forEach{lit: Literal -> lit.first.setTo(lit.second)} }
                 //verify, that result is indeed primeImplicant
-                assertFalse("ERROR: Prematurely returned PrimeImplicant",
-                        clWithPI.any { Implicant.getNonPrimeImplicantVariable(it).let{ freeVar ->
-                            freeVar is Either.Left && freeVar.value != null}})
+                assertFalse(clWithPI.any { Implicant.getNonPrimeImplicantVariable(it).let{ freeVar ->
+                            freeVar is Either.Left && freeVar.value != null}},
+                    "ERROR: Prematurely returned PrimeImplicant")
             }
         }
     }
 
 
     private fun makeBoolCode(numVars: Int, numClauses: Int, varStep: Int):String {
-        return makeBoolCode(Random(System.currentTimeMillis()), makeVarIds(numVars), numClauses, varStep)
+        return makeBoolCode(makeVarIds(numVars), numClauses, varStep)
     }
-    private fun makeBoolCode(randy: Random, knownVars:List<VariableIdentifier>, numClauses:Int, varStep:Int): String {
+    private fun makeBoolCode(knownVars:List<VariableIdentifier>, numClauses:Int, varStep:Int): String {
         val clauseList:MutableList<String> = mutableListOf()
         for (clauseIter: Int in 1..numClauses) {
             val varList:MutableList<String> = mutableListOf()
             var varsIter:Int = 0
             while(true) {
-                varsIter += Math.abs(randy.nextInt() % varStep)+1
+                varsIter += Math.abs(Random.nextInt() % varStep)+1
                 if (varsIter >= knownVars.size) {
                     break
                 } else {
                     var s:String =
-                            if (randy.nextBoolean()) "!" else ""
+                            if (Random.nextBoolean()) "!" else ""
 
                     s += knownVars[varsIter]
                     varList.add(s)
@@ -214,13 +213,13 @@ class Tests{
         val fa = ClauseSetWatchedLiterals("a & a|b|c")
         val bba = Backbone.getBackboneKaiKue(fa)//has backbone of A
         var success:Boolean = bba.size == 1 && bba.contains(Literal(fa.findVariable("a")!!, true))
-        assert(success)
+        assertTrue(success)
 
         val fb = ClauseSetWatchedLiterals("!a & a|b")
         val bbb = Backbone.getBackboneKaiKue(fb)// has backbone of !a,b
         success = bbb.size == 2 && bbb.contains(Literal(fb.findVariable("a")!!, false)) &&
                 bbb.contains(Literal(fb.findVariable("b")!!, true))
-        assert(success)
+        assertTrue(success)
 
         val fc = ClauseSetWatchedLiterals("D|!G|!J & D|!I|J & F|!J|!K & F|I & !F|!J & B|!F|!I & F|!J & D|!G & !F|G & !F|!G & !F|!J & !D|!F|!G|!K & !F|!G|K & M|N")
         val bbc = Backbone.getBackboneKaiKue(fc)//has a backbone of [(D, true), (F, false), (I, true), (J, false)]
@@ -228,7 +227,7 @@ class Tests{
                 bbc.contains(Literal(fc.findVariable("F")!!, false)) &&
                 bbc.contains(Literal(fc.findVariable("I")!!, true)) &&
                 bbc.contains(Literal(fc.findVariable("J")!!, false))
-        assert(success)
+        assertTrue(success)
 
 
 
@@ -240,7 +239,7 @@ class Tests{
         val knownVars = makeVarIds(8)
 
         for (i in 0..100) {
-            var boolCode:String = makeBoolCode(randy,knownVars,10, 4)
+            var boolCode:String = makeBoolCode(knownVars,10, 4)
             val klaus = ClauseSetWatchedLiterals(boolCode)
 
             println("Finding backbone for formula: ")
@@ -402,7 +401,6 @@ class Tests{
         val numClauses = 100
         val varStep = 16
 
-        val randy = Random()
 
         val knownVars = makeVarIds(numVars)
         var numFails = 0
@@ -416,7 +414,7 @@ class Tests{
         var numIntersectRuns = 0
 
         for (_iter:Int in 1..numTests) {
-            val code:String = makeBoolCode(randy,knownVars,numClauses,varStep)
+            val code:String = makeBoolCode(knownVars,numClauses,varStep)
 
             if (cdclSAT(ClauseSetWatchedLiterals(code)))
             {

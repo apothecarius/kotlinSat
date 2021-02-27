@@ -46,7 +46,7 @@ class Heap<T : Comparable<T>>()
             else{
                 val leftMinDepth = this.left!!.minDepth()
                 val rightMinDepth = this.right!!.minDepth()
-                assert(rightMinDepth <= leftMinDepth)
+                assert { rightMinDepth <= leftMinDepth }
                 if(leftMinDepth <= rightMinDepth)
                 {
                     this.left!!.add(e)
@@ -100,7 +100,7 @@ class Heap<T : Comparable<T>>()
 
         private fun rebalanceDown()
         {
-            assert(this.content != null)
+            assert{ this.content != null }
             if (this.left == null && this.right == null) {
                 return
             }
