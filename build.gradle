@@ -12,6 +12,18 @@ repositories {
 }
 
 kotlin {
+    targets {
+        jvm()
+
+        configure([jvm])  {
+            withJava()
+            jvmJar {
+                //hack to have kotlin libs like "kotlin.jvm.internal.Intrinsics" in the jar, without which
+                //java cannot use a kotlin jar.
+                from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+            }
+        }
+    }
     jvm {
         compilations.all {
             kotlinOptions.jvmTarget = '1.8'

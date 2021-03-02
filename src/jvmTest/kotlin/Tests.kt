@@ -13,7 +13,6 @@ import kotlin.test.*
 import materials.predicate
 import materials.variable
 import support.Either
-import support.Main
 import support.readCnf
 import kotlin.random.Random
 
@@ -37,9 +36,6 @@ class Tests{
 
         for (_iter:Int in 1..numTests) {
             val boolCode:String = makeBoolCode(knownVars,numClauses, varStep)
-            if (Main.verbose) {
-                println(boolCode)
-            }
 
             val curClauseSetDpll = ClauseSet(boolCode)
             val curClauseSetCdcl = ClauseSet(boolCode)//materials.ClauseSetWatchedLiterals(boolCode)
