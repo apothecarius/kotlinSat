@@ -4,6 +4,7 @@ import materials.ClauseSetWatchedLiterals
 import materials.ClauseWatchedLiterals
 import materials.Literal
 import materials.Variable
+import support.Helpers
 import support.assert
 
 typealias FieldPossibilities = Array<Variable>
@@ -18,29 +19,11 @@ typealias SudokuVariableSet = Array<Array<FieldPossibilities>>
  * Returns coordinates of sudoku field (within [0..8]**2)
  * Blocktype can be in [1..3] for column,row or square
  */
-private fun SudokuVariableSet.getSudokuFieldCoord(blockIdx: Int, fieldIdx: Int, blockType: Int):Pair<Int,Int> {
-    assert { blockIdx in 0..8 }
-    assert { fieldIdx in 0..8 }
-    assert { blockType in 1..3 }
 
-    return when (blockType) {
-        1 -> Pair(blockIdx, fieldIdx)
-        2 -> Pair(fieldIdx, blockIdx)
-        3 -> {
-            val bx = blockIdx % 3
-            val by = (blockIdx-bx) / 3
-            val dx = fieldIdx % 3
-            val dy = (fieldIdx - dx) / 3
-            Pair(bx*3+dx, by*3+dy)
-        }
-        else -> throw Error("Only three block types in a Sudoku")
-    }
-}
 private fun SudokuVariableSet.getSudokuField(blockIdx: Int, fieldIdx: Int, blockType: Int): FieldPossibilities {
-    with(this.getSudokuFieldCoord(blockIdx,fieldIdx,blockType)){
+    with(Sudoku.getSudokuFieldCoord(blockIdx,fieldIdx,blockType)){
         return this@getSudokuField[first][second]
     }
-
 }
 
 
@@ -52,49 +35,79 @@ private fun SudokuVariableSet.getSudokuField(blockIdx: Int, fieldIdx: Int, block
  *
  * TODO: Add functions for intuitive input (sudoku puzzle statement) and output (print result as integer array or string)
  */
-class Sudoku(fixedVars: Array<Array<Int>>) : ClauseSetWatchedLiterals(makeSudokuFormula(fixedVars)) {
-    //TODO string based constructor or from a file
-    fun printTrueAssignments() {
-        for (vari in this.getPresentVariables()) {
-            if (!vari.isUnset && vari.boolSetting!!) {
-                println(vari.id)
-            }
-        }
-    }
+class Sudoku(fixedVars: Array<Triple<Int,Int,Int>>) : ClauseSetWatchedLiterals(makeSudokuFormula(fixedVars))
+{
+    /**
+     * Creates a sudoku puzzle from a text describing it.
+     * Each line must be given left to right with a pipe symbol ("|") at the end
+     * Unknown fields are to be given as spaces, trailing spaces may be omitted
+     */
+    constructor(puzzle: String) : this(
+        puzzle.split('|').withIndex().map {
+                (rowIdx,row:String) -> row.toCharArray().withIndex().filter{it.value != ' '}.map{
+                (columnIndex,assignment) -> Triple(columnIndex+1,rowIdx+1, Helpers.digitToInt(assignment))
+        } }.flatten().toTypedArray()
+    )
+
 
     companion object {
+
+        internal fun getSudokuFieldCoord(blockIdx: Int, fieldIdx: Int, blockType: Int):Pair<Int,Int> {
+            assert { blockIdx in 0..8 }
+            assert { fieldIdx in 0..8 }
+            assert { blockType in 1..3 }
+
+            return when (blockType) {
+                1 -> Pair(blockIdx, fieldIdx)
+                2 -> Pair(fieldIdx, blockIdx)
+                3 -> {
+                    val bx = blockIdx % 3
+                    val by = (blockIdx-bx) / 3
+                    val dx = fieldIdx % 3
+                    val dy = (fieldIdx - dx) / 3
+                    Pair(bx*3+dx, by*3+dy)
+                }
+                else -> throw Error("Only three block types in a Sudoku")
+            }
+        }
+
         private fun makeVarId(x: Int, y: Int, assignment: Int): String =
                 (x.toString() + "x" + y.toString() + ":" + assignment.toString())
 
-        fun makeSudokuFormula(fixedVars: Array<Array<Int>>): Array<ClauseWatchedLiterals> {
+        internal fun makeSudokuFormula(fixedVars: Array<Triple<Int,Int,Int>>): Array<ClauseWatchedLiterals>
+        {
             val vars: SudokuVariableSet = makeVariables()
             //base sudoku rules can be explained with two rules
             //R1a + R1b: Every field must have exactly one assignment
             // (split into R1a"at least one assignment" and R1b"at most one assignment"
             //R2: Every block/column/row must contain every assignment once
             // also split into "have every one" and "they must be unique per block"
-            return (ensureFieldsHaveSomeAssignment(vars) +
-                    ensureFieldsHaveAtMostOneAssignment(vars) +
-                    ensureBlocksHaveEveryAssignment(vars) +
-                    ensureBlocksHaveUniqueAssignments(vars) +
-                    fixAssignments(fixedVars, vars)
+
+
+            return (ensureFieldsHaveSomeAssignment(vars).toList() +
+                    ensureFieldsHaveAtMostOneAssignment(vars).toList() +
+                    ensureBlocksHaveEveryAssignment(vars).toList() +
+                    ensureBlocksHaveUniqueAssignments(vars).toList() +
+                    fixAssignments(fixedVars, vars).toList()
                     ).toList().toTypedArray()
         }
 
         /**
          * Returns rules that enforce assigning a specific field to a specific number
+         * @param fixedVars An array with
          */
-        private fun fixAssignments(fixedVars: Array<Array<Int>>, knownVars: SudokuVariableSet): Sequence<ClauseWatchedLiterals> {
+        private fun fixAssignments(fixedVars: Array<Triple<Int,Int,Int>>, knownVars: SudokuVariableSet)
+        : Sequence<ClauseWatchedLiterals>
+        {
             return sequence {
                 for (fix in fixedVars) {
-                    assert({ fix.size == 3 },"Assignments must have 3 numbers between 1 and 9" )
 
-                    fix.forEach {
+                    fix.toList().forEach {
                         assert({ it in 1..9 },"Assignments must be between 1 and 9" )
                     }
                     //values are given as [1..9]
-                    val theVar = knownVars[fix[0] - 1][fix[1] - 1][fix[2] - 1]
-                    ClauseWatchedLiterals(Literal(theVar, true))
+                    val theVar = knownVars[fix.first - 1][fix.second - 1][fix.third - 1]
+                    yield(ClauseWatchedLiterals(Literal(theVar, true)))
                 }
             }
         }
@@ -139,13 +152,16 @@ class Sudoku(fixedVars: Array<Array<Int>>) : ClauseSetWatchedLiterals(makeSudoku
         private fun ensureFieldsHaveAtMostOneAssignment(vars: SudokuVariableSet): Sequence<ClauseWatchedLiterals> {
             return do9ToPowerNTimes { x, y, i, j ->
                 if (i == j) {
-                    emptySequence<ClauseWatchedLiterals>()
+                    emptySequence()
                 }
-                val curRule = ClauseWatchedLiterals(arrayOf(
+                else{
+                    val curRule = ClauseWatchedLiterals(arrayOf(
                         Literal(vars[x][y][i], false),
                         Literal(vars[x][y][j], false)
-                ))
-                sequenceOf(curRule)
+                    ))
+                    sequenceOf(curRule)
+                }
+
             }
         }
 
@@ -186,19 +202,19 @@ class Sudoku(fixedVars: Array<Array<Int>>) : ClauseSetWatchedLiterals(makeSudoku
 
                 sequence{
                     //in row x, any field must have 'assignment'
-                    ClauseWatchedLiterals((0..8).map { fieldIdx ->
+                    yield(ClauseWatchedLiterals((0..8).map { fieldIdx ->
                         Literal(vars[blockIdx][fieldIdx][assignment], true)
-                    }.toTypedArray())
+                    }.toTypedArray()))
                     //same for columns
-                    ClauseWatchedLiterals((0..8).map { fieldIdx ->
+                    yield(ClauseWatchedLiterals((0..8).map { fieldIdx ->
                         Literal(vars[fieldIdx][blockIdx][assignment], true)
-                    }.toTypedArray())
+                    }.toTypedArray()))
 
                     //same for squares
-                    ClauseWatchedLiterals((0..8).map { fieldIdx ->
+                    yield(ClauseWatchedLiterals((0..8).map { fieldIdx ->
                         val squaresField = vars.getSudokuField(blockIdx, fieldIdx, 3)
                         Literal(squaresField[assignment], true)
-                    }.toTypedArray())
+                    }.toTypedArray()))
                 }
             }
         }
@@ -206,21 +222,61 @@ class Sudoku(fixedVars: Array<Array<Int>>) : ClauseSetWatchedLiterals(makeSudoku
         private fun ensureBlocksHaveUniqueAssignments(vars: SudokuVariableSet): Sequence<ClauseWatchedLiterals> {
             return do9ToPowerNTimes { blockIdx, blocksField, blocksOtherField, assignment ->
                 if (blocksOtherField == blocksField) {
-                    emptySequence<ClauseWatchedLiterals>()
+                    emptySequence()
                 }
-                sequence{
-                    for (blockType in 1..3) {
-                        val field = vars.getSudokuField(blockIdx, blocksField, blockType)
-                        val otherField = vars.getSudokuField(blockIdx, blocksOtherField, blockType)
+                else{
+                    sequence{
+                        for (blockType in 1..3) {
+                            val field = vars.getSudokuField(blockIdx, blocksField, blockType)
+                            val otherField = vars.getSudokuField(blockIdx, blocksOtherField, blockType)
 
-                        ClauseWatchedLiterals(arrayOf(
+                            yield(ClauseWatchedLiterals(arrayOf(
                                 Literal(field[assignment], false),
                                 Literal(otherField[assignment], false)
-                        ))
+                            )))
+                        }
                     }
                 }
+
             }
         }
     }
+    
+    /**
+     * Generates a 9x9 array containing the assignments for this sudoku
+     */
+    fun to9By9Array():Array<Array<Int>>
+    {
+        val retu:Array<Array<Int>> = Array(9) { Array(9) {0 } }
+        for (vari in this.getPresentVariables().filter { !it.isUnset && it.boolSetting!! }) {
+            val x = Helpers.digitToInt(vari.id[0])-1
+            val y = Helpers.digitToInt(vari.id[2])-1
+            val assig = Helpers.digitToInt(vari.id[4])
+            retu[x][y] = assig
+        }
+        return retu
+    }
+
+    fun print()
+    {
+        val horizLine = "+ - - - + - - - + - - - +"
+        val arr = this.to9By9Array()
+
+        for(x in 0..8)
+        {
+            if(x % 3 == 0)
+                println(horizLine)
+            for(y in 0..8)
+            {
+                if(y % 3 == 0)
+                    print("| ")
+                print((arr[y][x]).toString()+" ")
+            }
+            println("|")
+        }
+        println(horizLine)
+    }
+
+
 }
 

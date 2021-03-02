@@ -1,5 +1,6 @@
 package materials
 
+import algorithms.cdclSAT
 import support.Heap
 import support.assert
 
@@ -67,18 +68,37 @@ open class ClauseSet(c:Array<Clause>)
         this.clauses.add(c)
     }
 
+
+    fun findUnsatClauses():Sequence<Clause>
+    {
+        val myClauses = this.clauses
+        return sequence {
+            myClauses.forEach { curClause ->
+                if(curClause.isEmpty)
+                    yield(curClause)
+            }
+        }
+    }
+
+    fun solve():Boolean
+    {
+        return cdclSAT(this)
+    }
+
     open fun getPresentVariables(): Sequence<Variable> = sequence {
         //the variables that were already returned
         val metVars:MutableSet<Variable> = mutableSetOf()
         for (c: Clause in clauses)
         {
             for(v: Variable in c.literals.map { it -> it.first })
+            {
                 if (metVars.contains(v)) {
                     continue
                 } else {
                     metVars.add(v)
                     yield(v)
                 }
+            }
         }
     }
 
@@ -135,7 +155,8 @@ open class ClauseSet(c:Array<Clause>)
         return this.clauses.find { c: Clause -> c.isEmpty }
     }
 
-    open fun resetVars(){
+    open fun resetVars()
+    {
         this.resetVars(this.getPresentVariables().toList())
     }
     open fun resetVars(vs : List<Variable>):Unit
@@ -162,23 +183,34 @@ open class ClauseSet(c:Array<Clause>)
         return this.clauses.joinToString(separator = " & ") { it.toString() }
     }
 
-    fun printVarSettings(): Unit {
-        val alreadyPrintedVars:MutableSet<Variable> = mutableSetOf()
-        for (c: Clause in this.clauses) {
-            for (v: Variable in c.literals.map { it.first }) {
-                if (alreadyPrintedVars.contains(v)) {
-                    continue;
-                } else {
-                    print(v.id + "->"+v.setting+" , ")
-                    alreadyPrintedVars.add(v)
-                }
-            }
+    fun printVarSettings() {
+        for (v: Variable in getPresentVariables()) {
+            print(v.id + "->"+v.setting+" , ")
         }
         println()
     }
 
+    /**
+     * Caches present variables and gives a lookup by their identifier
+     * TODO: If you add new variables, like Tseitin, then this lookup must be
+     * cleared with invalidateVarnameLookup
+     */
+    private var varnameToVariable:Map<VariableIdentifier,Variable>? = null
+
+    private fun invalidateVarnameLookup()
+    {
+        varnameToVariable = null
+    }
+    private fun setupVarnameLookup()
+    {
+        if(this.varnameToVariable == null)
+            this.varnameToVariable = this.getPresentVariables().associateBy { it.id  }
+    }
+
+
     fun findVariable(i: VariableIdentifier): Variable? {
-        return this.getPresentVariables().find { it.id == i }
+        this.setupVarnameLookup()
+        return this.varnameToVariable!![i]
     }
 
 

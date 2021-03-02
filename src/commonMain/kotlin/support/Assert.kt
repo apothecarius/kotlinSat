@@ -9,7 +9,7 @@ fun assert(assertionBlock:(()->Boolean), err:String = "")
     {
         if(!assertionBlock())
         {
-            throw Error(err)
+            throw AssertionError(err)
         }
     }
 }
