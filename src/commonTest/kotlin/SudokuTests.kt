@@ -1,7 +1,5 @@
-package test
-
 import algorithms.Sudoku
-import org.junit.Test
+import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 

@@ -1,5 +1,3 @@
-package test
-
 import materials.ClauseSet
 import materials.ClauseSetWatchedLiterals
 import materials.Literal
@@ -14,7 +12,7 @@ import materials.predicate
 import materials.variable
 import support.Either
 import support.Helpers
-import support.readCnf
+import kotlin.math.abs
 import kotlin.random.Random
 
 /**
@@ -83,9 +81,9 @@ class Tests{
         val clauseList:MutableList<String> = mutableListOf()
         for (clauseIter: Int in 1..numClauses) {
             val varList:MutableList<String> = mutableListOf()
-            var varsIter:Int = 0
+            var varsIter = 0
             while(true) {
-                varsIter += Math.abs(Random.nextInt() % varStep)+1
+                varsIter += abs(Random.nextInt() % varStep)+1
                 if (varsIter >= knownVars.size) {
                     break
                 } else {
@@ -96,7 +94,7 @@ class Tests{
                     varList.add(s)
                 }
             }
-            if(!varList.isEmpty())
+            if(varList.isNotEmpty())
                 clauseList.add(varList.joinToString(separator="|"))
         }
         return clauseList.joinToString(separator = " & ")
@@ -112,9 +110,9 @@ class Tests{
         val itB = setB.iterator()
 
         while (itA.hasNext()) {
-            assert(itB.hasNext())
-            var a: Literal = itA.next()
-            var b: Literal = itB.next()
+            assertTrue(itB.hasNext() )
+            val a: Literal = itA.next()
+            val b: Literal = itB.next()
             if (a.variable.id != b.variable.id) {
                 return true
             }
@@ -128,33 +126,52 @@ class Tests{
 
     private fun ClauseSet.countSetVars():Int = this.getPresentVariables().count{ !it.isUnset }
 
-    fun implicantTest1()
+    @Test
+    fun primeImplicantError()
     {
-        //fehlerfall 1: mit WL hat ein unnötiges literal
-        val fehlerKlausCode = "!C|!E & !B|D & !B|D|!E & B|C|D & !B|!D & !C|!E & C|!D & C"
-        val fehlerKlaus1 = ClauseSetWatchedLiterals(fehlerKlausCode)
-        val fehlerKlaus2 = ClauseSetWatchedLiterals(fehlerKlausCode)
-        cdclSAT(fehlerKlaus1)
-        println(Implicant.getPrimeImplicant(fehlerKlaus1))
-        println(Implicant.getPrimeImplicantWithWatchedLiterals(fehlerKlaus2))
+        //Computing the prime implicant on this formula yields a literal too much
+        val algos:List<(ClauseSetWatchedLiterals) -> Set<Pair<Variable,Boolean>>> = listOf(
+            { x:ClauseSetWatchedLiterals -> Implicant.getPrimeImplicant(x) },
+            { x:ClauseSetWatchedLiterals -> Implicant.getPrimeImplicantWithWatchedLiterals(x) }
+        )
+        val names = arrayOf("BruteForce","WatchedLiteral")
+        val errorIndicator:(Int)->String = { idx:Int -> "Error in prime implicant" +
+                " computation with algorithm ${names[idx]}" }
+        for ((algoIdx,primeImplicantAlgorithm) in algos.withIndex())
+        {
+            val fehlerKlausCode = "!C|!E & !B|D & !B|D|!E & B|C|D & !B|!D & !C|!E & C|!D & C"
+            val fehlerKlaus = ClauseSetWatchedLiterals(fehlerKlausCode)
 
-        println(fehlerKlaus1.countSetVars())
-        println(fehlerKlaus2.countSetVars())
+            //Typically "+C,-E,-B,+D" is found as prime implicant (on good luck), but +D is not required in that
+            //"+C,-E,-B is actually the backbone and satisfies the formula, so it MUST be yielded
+            val primeImplicant = primeImplicantAlgorithm(fehlerKlaus)
+
+            assertEquals(3, primeImplicant.size,errorIndicator(algoIdx))
+            val varB = primeImplicant.find { it.first.id == "B" }!!
+            val varC = primeImplicant.find { it.first.id == "C" }!!
+            val varE = primeImplicant.find { it.first.id == "E" }!!
+            assertEquals(false, varB.predicate,errorIndicator(algoIdx))
+            assertEquals(true, varC.predicate,errorIndicator(algoIdx))
+            assertEquals(false, varE.predicate,errorIndicator(algoIdx))
+        }
     }
 
+    @Test
     fun implicantTest2()
     {
         val fehlerKlausCode = "E & B|E & B|!D & B|D|E & !D|E"
-        //fehler: solver setzt !B, aber !B existiert hier nicht, primplikantenalgo sollte trotzdem b unsetten
-        val fehlerKlaus1 = ClauseSetWatchedLiterals(fehlerKlausCode);
-        val fehlerKlaus2 = ClauseSetWatchedLiterals(fehlerKlausCode);
+        //error to search: the watched literal solver used to find a prime implicant
+        // with "-B", but that cant be, because -B is not in the formula
+        val fehlerKlaus1 = ClauseSetWatchedLiterals(fehlerKlausCode)
+        val fehlerKlaus2 = ClauseSetWatchedLiterals(fehlerKlausCode)
         cdclSAT(fehlerKlaus1)
+        cdclSAT(fehlerKlaus2)
 
-        println(Implicant.getPrimeImplicant(fehlerKlaus1))
-        println(Implicant.getPrimeImplicantWithWatchedLiterals(fehlerKlaus2))
+        val pi1 = Implicant.getPrimeImplicant(fehlerKlaus1)
+        val pi2 = Implicant.getPrimeImplicantWithWatchedLiterals(fehlerKlaus1)
+        assertTrue(pi1.find { it.variable.id == "B" && !it.predicate } == null)
+        assertTrue(pi2.find { it.variable.id == "B" && !it.predicate } == null)
 
-        println(fehlerKlaus1.countSetVars())
-        println(fehlerKlaus2.countSetVars())
     }
     fun implicantTest3()
     {
@@ -182,7 +199,8 @@ class Tests{
 
     fun implicantTest4()
     {
-        val fehlerKlausCode = "C|!G & D|!F|I & !C|I & !F|G|K & G & D|!I & !E|!J|K & !D|!E|I|J & C|!G|H|I|K & B|D|!F|!I|!J & !B|H|I & C|!I|!J"
+        val fehlerKlausCode = "C|!G & D|!F|I & !C|I & !F|G|K & G & D|!I & " +
+                "!E|!J|K & !D|!E|I|J & C|!G|H|I|K & B|D|!F|!I|!J & !B|H|I & C|!I|!J"
         //val fehlerKlausCode = "!B|!D|!E & B|D & C|E & C|!E & !B|D & C|!D & !B|C|!E"
 
         val fehlerKlaus1 = ClauseSetWatchedLiterals(fehlerKlausCode);
@@ -205,11 +223,12 @@ class Tests{
     }
 
     @Test
-    fun testBackbone():Unit
+    fun testBackbone()
     {
         val fa = ClauseSetWatchedLiterals("a & a|b|c")
         val bba = Backbone.getBackboneKaiKue(fa)//has backbone of A
-        var success:Boolean = bba.size == 1 && bba.contains(Literal(fa.findVariable("a")!!, true))
+        var success:Boolean = bba.size == 1 &&
+                bba.contains(Literal(fa.findVariable("a")!!, true))
         assertTrue(success)
 
         val fb = ClauseSetWatchedLiterals("!a & a|b")
@@ -218,8 +237,11 @@ class Tests{
                 bbb.contains(Literal(fb.findVariable("b")!!, true))
         assertTrue(success)
 
-        val fc = ClauseSetWatchedLiterals("D|!G|!J & D|!I|J & F|!J|!K & F|I & !F|!J & B|!F|!I & F|!J & D|!G & !F|G & !F|!G & !F|!J & !D|!F|!G|!K & !F|!G|K & M|N")
-        val bbc = Backbone.getBackboneKaiKue(fc)//has a backbone of [(D, true), (F, false), (I, true), (J, false)]
+        val fc = ClauseSetWatchedLiterals("D|!G|!J & D|!I|J & F|!J|!K & " +
+                "F|I & !F|!J & B|!F|!I & F|!J & D|!G & !F|G & !F|!G & " +
+                "!F|!J & !D|!F|!G|!K & !F|!G|K & M|N")
+        val bbc = Backbone.getBackboneKaiKue(fc)//has a backbone of
+        // [(D, true), (F, false), (I, true), (J, false)]
         success = bbc.size == 4 && bbc.contains(Literal(fc.findVariable("D")!!, true)) &&
                 bbc.contains(Literal(fc.findVariable("F")!!, false)) &&
                 bbc.contains(Literal(fc.findVariable("I")!!, true)) &&
@@ -232,7 +254,6 @@ class Tests{
     }
 
     fun testBackboneStocha() {
-        val randy:Random = Random(1253132)
         val knownVars = makeVarIds(8)
 
         for (i in 0..100) {
@@ -245,8 +266,8 @@ class Tests{
             val bbc = Backbone.getBackboneKaiKue(klaus, true)
             if (bb != bbc) {
                 println("mismatch in solver optimization")
-                println("With optimization: "+bbc)
-                println("Without optimization:" +bb)
+                println("With optimization: $bbc")
+                println("Without optimization:$bb")
             }
             if (bb.isEmpty()) {
                 println("backbones are empty")
@@ -290,63 +311,8 @@ class Tests{
         return
     }
 
-    @Test
-    fun cnfReadTest()
-    {
-        val formula = readCnf("probFiles/smallSatBomb.cnf")
-        assertTrue(formula.isFresh)
-        assertEquals(formula.getClauses().size, 1250)
-        assertEquals(formula.getPresentVariables().count(),209)
-
-        //TODO satisfiability check should return true, but takes forever without VSIDS
-        //the correct backbone is also noted
-    }
-
-    @Test
-    fun unLittleSatTest()
-    {
-        //read a small unsat formula and verify UNSAT
-        val formula = readCnf("probFiles/unLittleSat.cnf")
-        assertTrue(formula.isFresh)
-        assertFalse(cdclSAT(formula))
-    }
-
-    @Test
-    fun littleSatTest()
-    {
-        val formula = readCnf("probFiles/littleSat.cnf")
-        assertTrue(formula.isFresh)
-        assertTrue(cdclSAT(formula))
-    }
 
 
-    fun timingTests(): Unit {
-        val cod = makeBoolCode(4000,5000,2900)
-        var cs = ClauseSet(cod)
-        var cswl = ClauseSetWatchedLiterals(cod)
-        val start1 = System.currentTimeMillis()
-        val erg1 = cdclSolve(cs)
-        val end1 = System.currentTimeMillis()
-        val start2 = System.currentTimeMillis()
-        val erg2 = cdclSolve(cswl)
-        val end2 = System.currentTimeMillis()
-
-        val startSplit = System.currentTimeMillis()
-        val splitting = cs.separateClauses()
-        val endSplit = System.currentTimeMillis()
-        println(endSplit - startSplit)
-        println(splitting.size)
-        for (s in splitting) {
-            println(s)
-        }
-
-        println(cod)
-        println(end1 - start1)
-        println(end2 - start2)
-
-        println(cs.isFulfilled)
-        println(cswl.isFulfilled)
-    }
 
     @Test
     fun unsatTest()
@@ -375,83 +341,11 @@ class Tests{
         assertEquals(code,formulaWl.toString())
     }
 
-    @Test
-    fun bombTest()
-    {
-        val formula = readCnf("probFiles/smallSatBomb.cnf")
-        val backbone = Backbone.getBackboneIntersections(formula)
-        val expectedBackbone:List<Int> = listOf(-215, -205, 131, 138, 143, 204, 208, 210 ,243)
-        assertEquals(9,backbone.size)
-        for (lit: Literal in backbone) {
-            val asInt = lit.first.id.toInt() * if(lit.predicate) 1 else -1
-            assertTrue(expectedBackbone.contains(asInt))
-        }
 
-    }
-
-
-    @Test
-    fun testQuickBackbone()
-    {
-        val numTests = 40
-        val numVars = 30
-        val numClauses = 100
-        val varStep = 16
-
-
-        val knownVars = makeVarIds(numVars)
-        var numFails = 0
-        var runTests = 0
-
-        var sumMsecKaiKueSlow = 0
-        var sumMsecKaiKueFast = 0
-        var sumMsecIntersect = 0
-
-        var numKaiKueRuns = 0
-        var numIntersectRuns = 0
-
-        for (_iter:Int in 1..numTests) {
-            val code:String = makeBoolCode(knownVars,numClauses,varStep)
-
-            if (cdclSAT(ClauseSetWatchedLiterals(code)))
-            {
-                runTests++
-
-                val t1 = System.currentTimeMillis()
-                val kaiKueSlow: Set<Literal> = Backbone.getBackboneKaiKue(ClauseSetWatchedLiterals(code), false)
-                val kaiKueSlowRuns = algorithms.Backbone.numCdclRuns
-                val t2 = System.currentTimeMillis()
-
-                val t3 = System.currentTimeMillis()
-                val kaiKue: Set<Literal> = Backbone.getBackboneKaiKue(ClauseSetWatchedLiterals(code))
-                val kaiKueRuns = Backbone.numCdclRuns
-                val t4 = System.currentTimeMillis()
-                val t5 = System.currentTimeMillis()
-                val inters: Set<Literal> = Backbone.getBackboneIntersections(ClauseSetWatchedLiterals(code))
-                val intersRuns = Backbone.numCdclRuns
-                val t6 = System.currentTimeMillis()
-
-                sumMsecKaiKueSlow += (t2-t1).toInt()
-                sumMsecKaiKueFast += (t4-t3).toInt()
-                sumMsecIntersect += (t6-t5).toInt()
-                numKaiKueRuns += kaiKueRuns
-                numIntersectRuns += intersRuns
-
-                val failure:Boolean = isLiteralSetDifferent(inters.toList().sortedBy { it.variable.id },
-                        kaiKue.toList().sortedBy { it.variable.id })
-                assertFalse(failure)
-                if (failure) {
-                    numFails++
-                    println(code)
-                    println(inters)
-                }
-            }
-        }
-    }
     @Test
     fun activityInitializationTest()
     {
-        val form: ClauseSetWatchedLiterals = ClauseSetWatchedLiterals("a|b|c & b|!a & !c|a | d")
+        val form = ClauseSetWatchedLiterals("a|b|c & b|!a & !c|a | d")
         for (vari: Variable in form.getPresentVariables()) {
             assertEquals(when(vari.id){
                 "a" -> 3f
@@ -460,7 +354,6 @@ class Tests{
                 "d" -> 1f
                 else -> {
                     fail()
-                    0f
                 }
             },vari.activity)
         }
@@ -480,13 +373,5 @@ class Tests{
 
     }
 
-    @Test
-    fun refinedEssentialsTest()
-    {
-        //testrun with file from SAT Competition
-        //this file takes impractically long to solve without VSIDS
-        val form: ClauseSetWatchedLiterals = readCnf("probFiles/fla-qhid-200-1.cnf")
-        assertTrue(cdclSAT(form))
-    }
 }
 

@@ -1,5 +1,3 @@
-package test
-
 import support.Heap
 import materials.Variable
 import kotlin.random.Random
