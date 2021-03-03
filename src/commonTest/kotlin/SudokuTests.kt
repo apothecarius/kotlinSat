@@ -1,4 +1,5 @@
 import algorithms.Sudoku
+import support.Helpers
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -25,8 +26,52 @@ class SudokuTests {
         assertTrue { solvable }
         verifySudokuSum(sudo.to9By9Array())
         sudo.print()
-        //TODO check that solution contains original assignments
+
+
     }
+
+    @Test
+    fun fillupTextSudokuConstructorTest()
+    {
+        val puzzle:String =
+            " 3|" +
+            "   195|" +
+            "  8    6|" +
+            "8   6|"+
+            "4  8    1|" +
+            "    2|" +
+            " 6    28|" +
+            "   419  5|"+
+            "       7|"
+        val sudo1 = Sudoku(puzzle)
+        val puzzlePadded:String =
+            " 3       |" +
+            "   195   |" +
+            "  8    6 |" +
+            "8   6    |"+
+            "4  8    1|" +
+            "    2    |" +
+            " 6    28 |" +
+            "   419  5|"+
+            "       7 |"
+        val sudo2 = Sudoku(puzzlePadded)
+        val solvable1 = sudo1.solve()
+        assertTrue(solvable1)
+        val solution1 = sudo1.to9By9Array()
+        val puzzleAsArray = puzzle.split('|').withIndex().map {row ->  row.value.toCharArray().
+            withIndex().filter { (_,chr) -> chr != ' ' }.map {cell ->
+            Triple(cell.index,row.index,Helpers.digitToInt(cell.value))
+        } }.flatten()
+        for (fix in puzzleAsArray) {
+            val given = fix.third
+            val inSol = solution1[fix.first][fix.second]
+            assertEquals(given,inSol)
+        }
+
+
+        assertEquals(solvable1, sudo2.solve())
+        assertTrue(solution1.contentDeepEquals(sudo2.to9By9Array()))
+}
 
     @Test
     fun emptySudokuTest()

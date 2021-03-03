@@ -11,7 +11,7 @@ data class CdclTableEntry(
 
 typealias CdclTable = MutableList<CdclTableEntry>
 fun CdclTable.findReason(forVar: Variable):Reason? =
-        this.find { it:CdclTableEntry -> it.affectedVariable == forVar }?.reason
+        this.find { it.affectedVariable == forVar }?.reason
 
 fun CdclTable.getAxiomaticEntries(): Sequence<CdclTableEntry> = sequence{
     for (e:CdclTableEntry in iterator())
@@ -48,10 +48,6 @@ const val conflictNumberForActivityReordering = 17
 var conflictCounter:Int = 0
 
 
-fun CdclTable.countAxiomaticLiterals():Int {
-    return this.getAxiomaticEntries().count()
-}
-
 /**
  * Returns all variables that were set without a decision (except those that
  * were reverted due to conflicts).
@@ -64,29 +60,28 @@ fun CdclTable.countAxiomaticLiterals():Int {
  * is actually satisfiable
  */
 fun CdclTable.getUnitVariables():Set<Literal> =
-        this.filter { it.level == 0 }.map { it -> Pair(it.affectedVariable,it.value) }.toSet()
+        this.filter { it.level == 0 }.map { Pair(it.affectedVariable,it.value) }.toSet()
 
 /**
  * Removes all entries with or below the given level and
  * returns a list of all variables that were unset
  */
-fun CdclTable.backtrackTo(untilLevel: Int): List<Variable> {
-    var retu:MutableList<Variable> = mutableListOf()
+fun CdclTable.backtrackTo(untilLevel: Int): List<Variable>
+{
     fun allBelowLevel(entry:CdclTableEntry):Boolean = entry.level > untilLevel
-    this.filter { it:CdclTableEntry -> allBelowLevel(it)}.map {
-        it -> it.affectedVariable }.forEach {
-        it: Variable -> it.setTo(VariableSetting.Unset);retu.add(it)}
+
+    var retu:MutableList<Variable> = mutableListOf()
+
+    for(x in this.filter {allBelowLevel(it)}.map {it.affectedVariable })
+    {
+        x.setTo(VariableSetting.Unset)
+        retu.add(x)
+    }
 
     this.removeAll { allBelowLevel(it) }
     return retu
 }
 
-fun CdclTable.print(){
-    for (e: CdclTableEntry in this) {
-        println(e.level.toString() + "\t"+e.affectedVariable.id +
-                "\t "+e.value + "\t "+e.reason)
-    }
-}
 
 /**
  * A resolvent is a materials.Clause based on a conflict in the CDCL algorithm which is
@@ -107,8 +102,7 @@ fun Resolvent.resolve(other: Clause, v: Variable) {
  */
 fun Resolvent.resolve(other: Resolvent,v: Variable) {
     this.remove(v)
-    if(other != null)
-        this.putAll(other.filter { it.key != v })
+    this.putAll(other.filter { it.key != v })
 }
 /**
  * returns any key in the resolvent, or null, if the resolvent is empty
@@ -120,7 +114,7 @@ fun Resolvent.getAnyVariable(): Variable? =
         }
 
 
-sealed class Reason constructor ()
+sealed class Reason
 {
     class InUnitClause(c: Clause):Reason()
     {
@@ -138,29 +132,23 @@ sealed class Reason constructor ()
 
 fun cdclSAT(clauseSet: ClauseSet):Boolean
 {
-    val table = cdclSolve(clauseSet)
+    cdclSolve(clauseSet)
 
     return clauseSet.isFulfilled
-}
-
-fun cdclSolve(s:String) : ClauseSetWatchedLiterals {
-    val formula = ClauseSetWatchedLiterals(s)
-    cdclSolve(formula)
-    return formula
 }
 
 //fun cdclSolve(s: String) = cdclSolve(materials.ClauseSetWatchedLiterals(s))
 fun cdclSAT(s:String) = cdclSAT(ClauseSetWatchedLiterals(s))
 
 fun cdclSolve(clauseSet: ClauseSet, variablePriorityQueue:Map<Variable,Boolean>? = null): CdclTable {
-    var level:Int = 0
+    var level = 0
     val table : CdclTable = mutableListOf()
     val candidateIterator:Iterator<Map.Entry<Variable, Boolean>>? = variablePriorityQueue?.iterator()
 
     while (true) {
         val units = clauseSet.getAndSetUnitsWithReason()
 
-        if (!units.isEmpty()) {
+        if (units.isNotEmpty()) {
             table.addAll(units.map {
                 unit ->  CdclTableEntry(
                     level,
@@ -168,7 +156,7 @@ fun cdclSolve(clauseSet: ClauseSet, variablePriorityQueue:Map<Variable,Boolean>?
                     unit.first.second,
                     Reason.InUnitClause(unit.second))})
             if (clauseSet is ClauseSetWatchedLiterals) {
-                units.map { it -> it.first.variable }.forEach{
+                units.map {it.first.variable }.forEach{
                     clauseSet.updateWatchedLiterals(v=it)}
             }
             continue
@@ -198,10 +186,10 @@ fun cdclSolve(clauseSet: ClauseSet, variablePriorityQueue:Map<Variable,Boolean>?
             // prefixed variables which are set by decision are regularly extracted, until
             // resolvent is empty
 
-            var resolvent:Resolvent = makeResolvent(emptyClause)
+            val resolvent:Resolvent = makeResolvent(emptyClause)
             //a variablesSet which is learned at the end
-            var decidedConflictingVars:Resolvent = makeResolvent()//takes the decided variables out of the resolvent
-            while (!resolvent.isEmpty()) {
+            val decidedConflictingVars:Resolvent = makeResolvent()//takes the decided variables out of the resolvent
+            while (resolvent.isNotEmpty()) {
                 val curDecidedVars:Map<Variable,Boolean> = resolvent.filter{
                     table.findReason(it.key) is Reason.Decision}
                 decidedConflictingVars.putAll(curDecidedVars)
@@ -209,7 +197,7 @@ fun cdclSolve(clauseSet: ClauseSet, variablePriorityQueue:Map<Variable,Boolean>?
 
                 //get any materials.getVariable from resolvent. If its empty the loop can be
                 //ended
-                var unitVar: Variable = resolvent.getAnyVariable() ?: break //"elvis operator"
+                val unitVar: Variable = resolvent.getAnyVariable() ?: break //"elvis operator"
                 val reason:Reason = table.findReason(unitVar)!!
                 assert{ reason is Reason.InUnitClause }
                 if(reason is Reason.InUnitClause)
@@ -222,9 +210,8 @@ fun cdclSolve(clauseSet: ClauseSet, variablePriorityQueue:Map<Variable,Boolean>?
             val resolventClause: Clause =
                     when (clauseSet) {
                         is ClauseSetWatchedLiterals -> ClauseWatchedLiterals(decidedConflictingVars)
-                        is ClauseSet -> Clause(decidedConflictingVars)
-                        else -> null //syntactically necessary
-                    }!!
+                        else -> Clause(decidedConflictingVars) //no other subclass
+                    }
             clauseSet.addResolvent(resolventClause)
             level--
             val affectedVariables = table.backtrackTo(level)
@@ -275,7 +262,7 @@ fun cdclSolve(clauseSet: ClauseSet, variablePriorityQueue:Map<Variable,Boolean>?
                     explicitelySetVar.setTo(decisionVariableSetting)
                 }
             }
-            explicitelySetVar!!
+            explicitelySetVar
 
 
             if (clauseSet is ClauseSetWatchedLiterals) {

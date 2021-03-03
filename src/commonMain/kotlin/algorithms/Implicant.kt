@@ -27,20 +27,17 @@ class WatchedLiteralToClause {
         container.add(clause)
     }
 
-    fun get(lit: Literal):Set<ClauseWatchedLiterals> {
-        var retu:Set<ClauseWatchedLiterals>? = this.map[lit]
-        
-        return when (retu) {
+    fun get(lit: Literal):Set<ClauseWatchedLiterals>
+    {
+        return when (val retu = this.map[lit])
+        {
             null -> emptySet()
             else -> retu
         }
     }
 
     fun remove(lit: Literal, clause: ClauseWatchedLiterals) {
-        var container = this.map[lit]
-        if (container != null) {
-            container.remove(clause)
-        }
+        this.map[lit]?.remove(clause)
     }
 }
 
@@ -197,7 +194,7 @@ object Implicant {
                 //found a new literal, so update literalToClause map
                 val curWatcheds = checkedClause.getBothWatchedLiterals()
                 assert { curWatcheds.second != null }
-                var nuWatched:Literal =
+                val nuWatched:Literal =
                         if (prevWatcheds.first == curWatcheds.first)
                         {
                             curWatcheds.second!!
@@ -235,7 +232,7 @@ object Implicant {
                     {
                         continue
                     }
-                    var newPrimeLiteral:Literal = clause.getPrimeLiteral()!!
+                    val newPrimeLiteral:Literal = clause.getPrimeLiteral()!!
                     //assert{!requiredLiterals.contains(l)}
                     //assert{newPrimeLiteral == l}
                     requiredLiterals.add(newPrimeLiteral)
@@ -250,7 +247,7 @@ object Implicant {
             val possiblyUnnecessaryLiterals:Collection<Literal> = model.filter {! initialImplicant.contains(it) }
             for (l: Literal in possiblyUnnecessaryLiterals)
             {
-                println("Updating(w0): "+l)
+                println("Updating(w0): $l")
                 val prevSetting:Boolean = l.variable.boolSetting!!
                 //l.materials.getVariable.unset()
                 impliedW(Literal(l.variable,!l.predicate),initialImplicant,literalToClause)
@@ -268,22 +265,21 @@ object Implicant {
         //however it works better like this,
 
         //"M" in the paper, actually not a model but a partial model, an implicant
-        var model:MutableSet<Literal> = clauseSet.getPresentVariables().
-        filter { ! it.isUnset }.map { it -> Literal(it,it.boolSetting!!) }.
-        toMutableSet()
+        val model:MutableSet<Literal> = clauseSet.getPresentVariables().
+            filter { ! it.isUnset }.map { it -> Literal(it,it.boolSetting!!) }.toMutableSet()
         //"PI" in the paper, the set of variables that are in the prime implicant
-        var primeImplicant:MutableSet<Literal> = /*mutableSetOf()*///table.getUnitVariables().toMutableSet()
+        val primeImplicant:MutableSet<Literal> = /*mutableSetOf()*///table.getUnitVariables().toMutableSet()
                 clauseSet.getClauses().filter { it.literals.count() == 1 }.map { it.literals[0]}.toMutableSet()
         clauseSet.resetAllWatchedLiterals()
         //"W" in the paper
-        var literalToClause:WatchedLiteralToClause = clauseSet.getWatchedLiteralToClause()
+        val literalToClause:WatchedLiteralToClause = clauseSet.getWatchedLiteralToClause()
 
 
         //impliedW0(model,primeImplicant,literalToClause)
 
         while(true) {
             //get a literal that hasnt yet been set to
-            var literalToRemove:Literal = model.filter{!primeImplicant.contains(it)}.firstOrNull() ?: break
+            val literalToRemove:Literal = model.firstOrNull { !primeImplicant.contains(it) } ?: break
             //println("removing "+literalToRemove)
             model.remove(literalToRemove)
             literalToRemove.variable.unset()
