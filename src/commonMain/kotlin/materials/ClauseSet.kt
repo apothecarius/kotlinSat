@@ -12,18 +12,28 @@ open class ClauseSet(c:Array<Clause>)
 {
     private val clauses : MutableList<Clause> = c.toMutableList()
     private val activityHeap: Heap<Variable> = Heap(this.getPresentVariables())
-
+    private val var2Clauses:Map<Variable,MutableList<Clause>> = this.getPresentVariables()
+        .associateWith { mutableListOf() }
 
     //initialize literal activity with the number of occurences
     init{
         this.getPresentVariables().forEach { it.activity = 0f }
         this.clauses.forEach{ curClause ->
-            curClause.literals.forEach{curLit ->
+            curClause.literals.forEach{ curLit ->
+                //initialize activity
                 curLit.first.activity++
+
+                //setup reverse lookup
+                var2Clauses[curLit.first]!!.add(curClause)
             }}
     }
 
     fun reorderActivityHeap() = this.activityHeap.reorder()
+
+    /*
+     * Pass an immutable reference
+     */
+    fun getVarToClauses():Map<Variable,List<Clause>> = this.var2Clauses
 
     fun makeVsidsAssignment(): Variable
     {
@@ -66,6 +76,10 @@ open class ClauseSet(c:Array<Clause>)
     open fun addResolvent(c: Clause)
     {
         this.clauses.add(c)
+        //also add it to the reverse lookup
+        c.literals.map { it.first }.forEach { resolventsVar ->
+            this.var2Clauses[resolventsVar]!!.add(c)
+        }
     }
 
 
@@ -108,27 +122,41 @@ open class ClauseSet(c:Array<Clause>)
      */
     fun setUnits(): List<Variable>
     {
-        return this.getAndSetUnitsWithReason().map { it -> it.first.first}
+        return this.getAndSetUnitsWithReason().first.map {it.first.first}
     }
 
     /**
      * Iterates over all clauses, looking for one in unit state and assigns the last unassigned materials.getVariable
      * @return all variables that were assigned in this way (that were unit propagated) and the reason clause
+     * also the last assigned variable
      */
-    open fun getAndSetUnitsWithReason():List<Pair<Literal, Clause>>
+    open fun getAndSetUnitsWithReason(mostRecentAssignment:Variable? = null):
+            Pair<List<Pair<Literal, Clause>>,Variable?>
     {
         var retu  = mutableListOf<Pair<Literal, Clause>>()
+        var lastFound:Variable? = mostRecentAssignment
+
 
         //as long as you find unit clauses
-        var foundSomething:Boolean = true
+        var foundSomething = true
         while(foundSomething)
         {
             foundSomething = false
             //check all clauses for being empty or unit
-            for(c : Clause in this.clauses)
+            val clausesToCheck = if(lastFound == null)
+                this.clauses
+            else
+                this.var2Clauses[lastFound]!!
+
+            //TODO hold a list of variables that were propagated in this function and keep
+            // checking clauses that are associated with them. Instead of calling this function once for each freshly assigned variable
+            // This should remove the case where this two unit propagation phases follow each other
+
+            for(c : Clause in clausesToCheck)
             {
-                if(c.isEmpty)
-                    return retu
+                if(c.isEmpty) {
+                    return Pair(retu, lastFound)
+                }
 
                 var curUnit:Pair<Variable,Boolean>? = c.currentUnit
                 if(curUnit != null)
@@ -139,10 +167,11 @@ open class ClauseSet(c:Array<Clause>)
                         false -> VariableSetting.False
                     })
                     retu.add(Pair(curUnit, c))
+                    lastFound = curUnit.first
                 }
             }
         }
-        return retu
+        return Pair(retu,null)
 
     }
 

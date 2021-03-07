@@ -140,13 +140,20 @@ fun cdclSAT(clauseSet: ClauseSet):Boolean
 //fun cdclSolve(s: String) = cdclSolve(materials.ClauseSetWatchedLiterals(s))
 fun cdclSAT(s:String) = cdclSAT(ClauseSetWatchedLiterals(s))
 
-fun cdclSolve(clauseSet: ClauseSet, variablePriorityQueue:Map<Variable,Boolean>? = null): CdclTable {
+fun cdclSolve(toSolve: ClauseSet, variablePriorityQueue:Map<Variable,Boolean>? = null): CdclTable {
     var level = 0
     val table : CdclTable = mutableListOf()
     val candidateIterator:Iterator<Map.Entry<Variable, Boolean>>? = variablePriorityQueue?.iterator()
 
-    while (true) {
-        val units = clauseSet.getAndSetUnitsWithReason()
+    var previouslyAssignedVariable:Variable? = null
+
+    while (true)
+    {
+        val units:List<Pair<Literal, Clause>> = toSolve.getAndSetUnitsWithReason(
+            previouslyAssignedVariable).let { (first,second) ->
+            previouslyAssignedVariable = second
+            first
+        }
 
         if (units.isNotEmpty()) {
             table.addAll(units.map {
@@ -155,33 +162,34 @@ fun cdclSolve(clauseSet: ClauseSet, variablePriorityQueue:Map<Variable,Boolean>?
                     unit.first.first,
                     unit.first.second,
                     Reason.InUnitClause(unit.second))})
-            if (clauseSet is ClauseSetWatchedLiterals) {
+            if (toSolve is ClauseSetWatchedLiterals) {
                 units.map {it.first.variable }.forEach{
-                    clauseSet.updateWatchedLiterals(v=it)}
+                    toSolve.updateWatchedLiterals(v=it)}
             }
             continue
         }
 
 
-        if(clauseSet.isEmpty)
+        if(toSolve.isEmpty)
         {
+            previouslyAssignedVariable = null
             //a conflict occurred
             conflictCounter++
             conflictCounter %= conflictNumberForActivityDecay*conflictNumberForActivityReordering
             if (conflictCounter % conflictNumberForActivityDecay == 0) {
-                clauseSet.getPresentVariables().forEach { it.activity /= 2f }
+                toSolve.getPresentVariables().forEach { it.activity /= 2f }
             }
-            if (clauseSet is ClauseSetWatchedLiterals) {
-                clauseSet.resetAllWatchedLiterals()
+            if (toSolve is ClauseSetWatchedLiterals) {
+                toSolve.resetAllWatchedLiterals()
             }
-            assert { !clauseSet.isFulfilled }
+            assert { !toSolve.isFulfilled }
             if (level == 0) {
                 return table //unresolvable conflict -> UNSAT
             }
 
 
             //the empty clause that is being evaluated, to learn a new clause
-            val emptyClause: Clause = clauseSet.getEmptyClause()!!
+            val emptyClause: Clause = toSolve.getEmptyClause()!!
             // a set of (variables+materials.getPredicate) which is resolved with other reason clauses
             // prefixed variables which are set by decision are regularly extracted, until
             // resolvent is empty
@@ -208,23 +216,23 @@ fun cdclSolve(clauseSet: ClauseSet, variablePriorityQueue:Map<Variable,Boolean>?
                 return table
             }
             val resolventClause: Clause =
-                    when (clauseSet) {
+                    when (toSolve) {
                         is ClauseSetWatchedLiterals -> ClauseWatchedLiterals(decidedConflictingVars)
                         else -> Clause(decidedConflictingVars) //no other subclass
                     }
-            clauseSet.addResolvent(resolventClause)
+            toSolve.addResolvent(resolventClause)
             level--
             val affectedVariables = table.backtrackTo(level)
             //explicitely unset variables, this will also reset watched literals
-            clauseSet.resetVars(affectedVariables)
+            toSolve.resetVars(affectedVariables)
 
             //increase activity for conflict variables
             resolventClause.literals.forEach { it.first.activity++ }
             if (conflictCounter % conflictNumberForActivityReordering == 0) {
-                clauseSet.reorderActivityHeap()
+                toSolve.reorderActivityHeap()
             }
         }
-        else if (clauseSet.isFulfilled) {
+        else if (toSolve.isFulfilled) {
             return table //found solution -> SAT
         }
         else { //do decision
@@ -232,46 +240,47 @@ fun cdclSolve(clauseSet: ClauseSet, variablePriorityQueue:Map<Variable,Boolean>?
             //always set false, let true come through learned clauses
             //getAnyFreeVariable mustnt be null, since if all variables
             //where set, the clauseSet would be SAT OR UNSAT
-            var explicitelySetVar: Variable? = null
+            var decidedVariable: Variable? = null
 
             //special for candidate/intersection backbone calculation
             //if candidates are present
             if (candidateIterator != null)
             {
-                while (explicitelySetVar == null && candidateIterator.hasNext())
+                while (decidedVariable == null && candidateIterator.hasNext())
                 {
                     val curCandidate = candidateIterator.next()
                     if (!curCandidate.key.isUnset) {
                         continue
                     } else {
-                        explicitelySetVar = curCandidate.key
+                        decidedVariable = curCandidate.key
                         //note that
-                        explicitelySetVar.setTo(curCandidate.value)
+                        decidedVariable.setTo(curCandidate.value)
                     }
                 }
             }
 
             //else: if no candidates exist (anymore) or none are supposed to be used
             // default to using any free materials.getVariable
-            if(explicitelySetVar == null){
+            if(decidedVariable == null){
                 if(useVsids)
                 {
-                    explicitelySetVar = clauseSet.makeVsidsAssignment() //TODO get this to work
+                    decidedVariable = toSolve.makeVsidsAssignment() //TODO get this to work
                 }else{
-                    explicitelySetVar = clauseSet.getAnyFreeVariable()!!
-                    explicitelySetVar.setTo(decisionVariableSetting)
+                    decidedVariable = toSolve.getAnyFreeVariable()!!
+                    decidedVariable.setTo(decisionVariableSetting)
                 }
             }
-            explicitelySetVar
 
 
-            if (clauseSet is ClauseSetWatchedLiterals) {
-                clauseSet.updateWatchedLiterals(explicitelySetVar)
+            if (toSolve is ClauseSetWatchedLiterals) {
+                toSolve.updateWatchedLiterals(decidedVariable)
             }
-            table.add(CdclTableEntry(level,explicitelySetVar,explicitelySetVar.boolSetting!!,Reason.Decision))
-            if (clauseSet is ClauseSetWatchedLiterals && ClauseWatchedLiterals.activeWLIterationScheme == WatchedLiteralIterationScheme.ToMiddle) {
-                clauseSet.resetAllWatchedLiterals()
+            table.add(CdclTableEntry(level,decidedVariable,decidedVariable.boolSetting!!,Reason.Decision))
+            if (toSolve is ClauseSetWatchedLiterals &&
+                ClauseWatchedLiterals.activeWLIterationScheme == WatchedLiteralIterationScheme.ToMiddle) {
+                toSolve.resetAllWatchedLiterals()
             }
+            previouslyAssignedVariable = decidedVariable
         }
     }
 }

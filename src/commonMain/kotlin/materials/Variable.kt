@@ -37,10 +37,14 @@ class Variable constructor(c: VariableIdentifier) : Comparable<Variable> {
      */
     var activity: Float = 0f
 
-    var id: VariableIdentifier = c
+    val id: VariableIdentifier = c
 
     init {
         assert{ id.isNotBlank() }
+    }
+
+    override fun hashCode(): Int {
+        return this.id.hashCode()
     }
 
     var setting: VariableSetting = VariableSetting.Unset
@@ -116,10 +120,10 @@ class Variable constructor(c: VariableIdentifier) : Comparable<Variable> {
     }
 
     override fun equals(other: Any?): Boolean {
-        if (other is Variable) {
-            return this.id.equals(other.id) && this.setting.equals(other.setting)
+        return if (other is Variable) {
+            this.id == other.id && this.setting == other.setting
         } else
-            return super.equals(other)
+            super.equals(other)
     }
 
     override fun compareTo(other: Variable): Int

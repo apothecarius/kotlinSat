@@ -1,6 +1,5 @@
 package materials
 
-import algorithms.WatchedLiteralToClause
 import support.assert
 
 /**
@@ -71,19 +70,23 @@ open class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet
         }
     }
 
-    override fun getAndSetUnitsWithReason(): List<Pair<Literal, Clause>> {
+    override fun getAndSetUnitsWithReason(mostRecentAssignment:Variable?):
+            Pair<List<Pair<Literal, Clause>>,Variable?>
+    {
         var retu:MutableList<Pair<Literal, Clause>> = mutableListOf()
+        var retuVar:Variable? = mostRecentAssignment
 
         do {
-            val directUnits = super.getAndSetUnitsWithReason()
+            val (directUnits,mra) = super.getAndSetUnitsWithReason(retuVar)
             for (unit in directUnits) {
                 retu.add(unit)
                 val activeVar: Variable = unit.first.first
                 this.updateWatchedLiterals(activeVar)
             }
-        }while(! directUnits.isEmpty())
+            retuVar = mra
+        }while(directUnits.isNotEmpty())
 
-        return retu
+        return Pair(retu,retuVar)
     }
 
     fun updateWatchedLiterals(v: Variable):Unit
@@ -117,18 +120,6 @@ open class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet
 //        this.clausesWL.forEach { it.resetWatchedLiterals() }
     }
 
-
-    fun getWatchedLiteralToClause(): WatchedLiteralToClause {
-        assert{ !ClauseWatchedLiterals.watchedLiteralsForUnitVariables }
-        var retu:WatchedLiteralToClause = WatchedLiteralToClause()
-
-        for (clause in this.clausesWL) {
-            for (lit: Literal in clause.getBothWatchedLiterals().toList().filterNotNull()) {
-                retu.put(lit,clause)
-            }
-        }
-        return retu
-    }
 
     fun removeFalsyVariables() {
         this.getClauses().forEach { it.filterFalsyLiterals() }

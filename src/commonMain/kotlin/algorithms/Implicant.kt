@@ -15,31 +15,6 @@ this framework
  */
 
 
-class WatchedLiteralToClause {
-
-    private val map:MutableMap<Literal,MutableSet<ClauseWatchedLiterals>> = mutableMapOf()
-    fun put(lit: Literal, clause: ClauseWatchedLiterals) {
-        var container = this.map[lit]
-        if (container == null) {
-            container = mutableSetOf()
-            this.map[lit] = container
-        }
-        container.add(clause)
-    }
-
-    fun get(lit: Literal):Set<ClauseWatchedLiterals>
-    {
-        return when (val retu = this.map[lit])
-        {
-            null -> emptySet()
-            else -> retu
-        }
-    }
-
-    fun remove(lit: Literal, clause: ClauseWatchedLiterals) {
-        this.map[lit]?.remove(clause)
-    }
-}
 
 
 object Implicant {

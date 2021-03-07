@@ -52,12 +52,11 @@ open class Clause constructor(disjunction : Array<Literal>)
         get() = this.literals.any{it.becomesTrue()}
 
     open val currentUnit: Pair<Variable,Boolean>? get() {
-        if(! this.isUnit)
-            return null
-        else
-        {
+        return if(! this.isUnit)
+            null
+        else {
             //findOnly would be nice to remove one loop
-            return this.literals.first { it.variable.setting == VariableSetting.Unset }
+            this.literals.first { it.variable.setting == VariableSetting.Unset }
         }
     }
 
