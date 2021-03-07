@@ -1,3 +1,5 @@
+package test
+
 import algorithms.Sudoku
 import support.Helpers
 import kotlin.test.Test

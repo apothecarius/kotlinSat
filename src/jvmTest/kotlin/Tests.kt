@@ -1,3 +1,5 @@
+package test
+
 import materials.ClauseSet
 import materials.ClauseSetWatchedLiterals
 import materials.Literal
