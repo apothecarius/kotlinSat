@@ -22,8 +22,10 @@ class SudokuTests {
             "   419  5|"+
             "       7|"
         val sudo = Sudoku(puzzle)
+        CnfFormulaTests.assertFormulaInvariances(sudo)
         assertTrue { verifySudokuVariableCount(sudo) }
         val solvable = sudo.solve()
+        CnfFormulaTests.assertFormulaInvariances(sudo)
         assertEquals(true,sudo.findVariable("2x1:3")!!.boolSetting)
         assertTrue { solvable }
         verifySudokuSum(sudo.to9By9Array())
@@ -140,6 +142,7 @@ class SudokuTests {
         )
 
         val sudo = Sudoku(fixes)
+        CnfFormulaTests.assertFormulaInvariances(sudo)
 
         assertTrue { verifySudokuVariableCount(sudo) }
         val issatisfiable = sudo.solve()

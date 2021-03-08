@@ -71,22 +71,21 @@ open class ClauseSetWatchedLiterals(c: Array<ClauseWatchedLiterals>) : ClauseSet
     }
 
     override fun getAndSetUnitsWithReason(mostRecentAssignment:Variable?):
-            Pair<List<Pair<Literal, Clause>>,Variable?>
+            List<Pair<Literal, Clause>>
     {
         var retu:MutableList<Pair<Literal, Clause>> = mutableListOf()
         var retuVar:Variable? = mostRecentAssignment
 
         do {
-            val (directUnits,mra) = super.getAndSetUnitsWithReason(retuVar)
+            val directUnits = super.getAndSetUnitsWithReason(retuVar)
             for (unit in directUnits) {
                 retu.add(unit)
                 val activeVar: Variable = unit.first.first
                 this.updateWatchedLiterals(activeVar)
             }
-            retuVar = mra
         }while(directUnits.isNotEmpty())
 
-        return Pair(retu,retuVar)
+        return retu
     }
 
     fun updateWatchedLiterals(v: Variable):Unit

@@ -12,7 +12,7 @@ open class ClauseSet(c:Array<Clause>)
 {
     private val clauses : MutableList<Clause> = c.toMutableList()
     private val activityHeap: Heap<Variable> = Heap(this.getPresentVariables())
-    private val var2Clauses:Map<Variable,MutableList<Clause>> = this.getPresentVariables()
+    internal val var2Clauses:Map<Variable,MutableList<Clause>> = this.getPresentVariables()
         .associateWith { mutableListOf() }
 
     //initialize literal activity with the number of occurences
@@ -122,7 +122,7 @@ open class ClauseSet(c:Array<Clause>)
      */
     fun setUnits(): List<Variable>
     {
-        return this.getAndSetUnitsWithReason().first.map {it.first.first}
+        return this.getAndSetUnitsWithReason().map {it.first.first}
     }
 
     /**
@@ -130,48 +130,53 @@ open class ClauseSet(c:Array<Clause>)
      * @return all variables that were assigned in this way (that were unit propagated) and the reason clause
      * also the last assigned variable
      */
-    open fun getAndSetUnitsWithReason(mostRecentAssignment:Variable? = null):
-            Pair<List<Pair<Literal, Clause>>,Variable?>
+    open fun getAndSetUnitsWithReason(mostRecentAssignment:Variable? = null) :
+            List<Pair<Literal, Clause>>
     {
-        var retu  = mutableListOf<Pair<Literal, Clause>>()
-        var lastFound:Variable? = mostRecentAssignment
+        var retu:MutableList<Pair<Literal, Clause>> = mutableListOf()
 
 
         //as long as you find unit clauses
-        var foundSomething = true
-        while(foundSomething)
-        {
-            foundSomething = false
-            //check all clauses for being empty or unit
-            val clausesToCheck = if(lastFound == null)
-                this.clauses
-            else
-                this.var2Clauses[lastFound]!!
+        val varsToPropagate:MutableList<Variable> = mutableListOf()
+        if (mostRecentAssignment != null) {
+            varsToPropagate.add(mostRecentAssignment)
+        }
 
-            //TODO hold a list of variables that were propagated in this function and keep
-            // checking clauses that are associated with them. Instead of calling this function once for each freshly assigned variable
-            // This should remove the case where this two unit propagation phases follow each other
+        var startException = mostRecentAssignment == null
+
+        while(varsToPropagate.isNotEmpty() || startException)
+        {
+            startException = false
+
+            //check all clauses for being empty or unit
+            val clausesToCheck:MutableList<Clause> = if(varsToPropagate.isEmpty())
+            {
+                this.clauses
+            }
+            else
+            {
+                this.var2Clauses[varsToPropagate.removeFirst()]!!
+            }
 
             for(c : Clause in clausesToCheck)
             {
                 if(c.isEmpty) {
-                    return Pair(retu, lastFound)
+                    return retu
                 }
 
                 var curUnit:Pair<Variable,Boolean>? = c.currentUnit
                 if(curUnit != null)
                 {
-                    foundSomething = true
                     curUnit.first.setTo(when(curUnit.second){
                         true -> VariableSetting.True
                         false -> VariableSetting.False
                     })
+                    varsToPropagate.add(curUnit.variable)
                     retu.add(Pair(curUnit, c))
-                    lastFound = curUnit.first
                 }
             }
         }
-        return Pair(retu,null)
+        return retu
 
     }
 

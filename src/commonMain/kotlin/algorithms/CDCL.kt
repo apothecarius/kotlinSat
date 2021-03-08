@@ -149,11 +149,8 @@ fun cdclSolve(toSolve: ClauseSet, variablePriorityQueue:Map<Variable,Boolean>? =
 
     while (true)
     {
-        val units:List<Pair<Literal, Clause>> = toSolve.getAndSetUnitsWithReason(
-            previouslyAssignedVariable).let { (first,second) ->
-            previouslyAssignedVariable = second
-            first
-        }
+        val units:List<Pair<Literal, Clause>> = toSolve.getAndSetUnitsWithReason(previouslyAssignedVariable)
+        previouslyAssignedVariable = null
 
         if (units.isNotEmpty()) {
             table.addAll(units.map {
