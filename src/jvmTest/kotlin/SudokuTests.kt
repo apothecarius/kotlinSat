@@ -72,7 +72,6 @@ class SudokuTests {
             assertEquals(given,inSol)
         }
 
-
         assertEquals(solvable1, sudo2.solve())
         assertTrue(solution1.contentDeepEquals(sudo2.to9By9Array()))
 }
@@ -88,11 +87,6 @@ class SudokuTests {
         verifySudokuSum(solution)
 
         assertTrue { solvable }
-    }
-
-    private fun verifySudokuVariableCount(sudo: Sudoku):Boolean
-    {
-        return sudo.getPresentVariables().toList().size == 9*9*9
     }
 
     @Test
@@ -154,8 +148,6 @@ class SudokuTests {
         for (fixation in fixes) {
             assertEquals(fixation.third, solution[fixation.first-1][fixation.second-1])
         }
-        //TODO verify sudoku conditions. Iterate over true assigned vars by coordinate
-        // and verify that each row block and column has exactly one of each assignments
     }
 
     /**
@@ -174,12 +166,12 @@ class SudokuTests {
                     val (x,y) = Sudoku.getSudokuFieldCoord(blkIdx,fieldIdx,blockType)
                     sum += sudo[x][y]
                 }
-
-
                 assertEquals(45, sum)
             }
         }
-
-
+    }
+    private fun verifySudokuVariableCount(sudo: Sudoku):Boolean
+    {
+        return sudo.getPresentVariables().toList().size == 9*9*9
     }
 }

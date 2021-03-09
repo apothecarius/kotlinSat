@@ -1,7 +1,6 @@
 package algorithms
 
 import materials.*
-import materials.ClauseWatchedLiterals.Companion.activeWLIterationScheme
 import support.Either
 import support.assert
 
@@ -13,8 +12,6 @@ The term clauseSet and setting of said clauseSet is used equivalently here,
 because the setting of variables is stored within the formula, in the terms of
 this framework
  */
-
-
 
 
 object Implicant {
@@ -146,125 +143,34 @@ object Implicant {
     fun getPrimeImplicantWithWatchedLiterals(clauseSet: ClauseSetWatchedLiterals,
                                              table:CdclTable):Set<Literal>
     {
-        fun HDL_constr(checkedClause:ClauseWatchedLiterals,changedLiteral:Literal,
-                       lit2clause:WatchedLiteralToClause):Boolean
-        {
-            //need to know, which literal was moved
-            val prevWatcheds = checkedClause.getBothWatchedLiterals()
-            lit2clause.remove(changedLiteral,checkedClause)
+        //set the literalwatches to propagate for this purpose
+        ClauseWatchedLiterals.watchedLiteralsForUnitVariables = false
+        //return table.map { Literal(it.affectedVariable,it.value) }.toSet()
+        val primeImplicant = mutableListOf<Literal>()
+        //add all unit propagated assignments because they are always part of
+        // the prime implicant
+        primeImplicant.addAll(table.filter { it.reason is  Reason.InUnitClause}.map {
+            Literal(it.affectedVariable,it.value) })
 
-            if (activeWLIterationScheme == WatchedLiteralIterationScheme.ToMiddle)
-            {
-                assert { checkedClause.watchedHead <= checkedClause.watchedTail }
-            }
-            checkedClause.updateWatchedLiterals(changedLiteral.variable)
-            if (activeWLIterationScheme == WatchedLiteralIterationScheme.ToMiddle)
-            {
-                assert { checkedClause.watchedHead <= checkedClause.watchedTail }
-            }
+        //go through the CdclTable top to bottom, skip propagations, and check whether
+        // some clause needs the decision. If so take it into retu, if not unassign it
 
-            //order of cases as in paper
-            if (! checkedClause.isPrimeFulfilled())
-            {
-                //found a new literal, so update literalToClause map
-                val curWatcheds = checkedClause.getBothWatchedLiterals()
-                assert { curWatcheds.second != null }
-                val nuWatched:Literal =
-                        if (prevWatcheds.first == curWatcheds.first)
-                        {
-                            curWatcheds.second!!
-                        } else if (prevWatcheds.second == curWatcheds.second)
-                        {
-                            curWatcheds.first
-                        }else
-                        {
-                            assert { false }
-                            curWatcheds.first
-                        }
+        table.filter { it.reason is Reason.Decision}.reversed().forEach {
+                (_,assignedVar,literalPhase,_) ->
+            val assocClauses = clauseSet.getOccurencesLookup()[assignedVar]!!
+            val isRequired:Boolean = assocClauses.any { it.isUnit }
 
-                lit2clause.put(nuWatched,checkedClause)
-                assert { checkedClause.isSatisfied }
-                return false
-            } else
-            {
-                //literal is the last remaining
-                //also remove the other reference, to not touch checkedclause again unnecessarily
-                lit2clause.remove(checkedClause.getPrimeLiteral()!!,checkedClause)
-                //assert{checkedClause.isSatisfied}
-                return true
-            }
-        }
-        //paper passes C and M, but C is never used and the relevant part of M is in the variables in the clauses in W
-        fun impliedW(l:Literal,requiredLiterals:MutableSet<Literal>,literalToClause:WatchedLiteralToClause)
-        {
-            //prevent concurrentmodificationException by copying
-            val occurences = literalToClause.get(l).toList()
-            for (clause in occurences)
-            {
-                if (HDL_constr(clause, l, literalToClause))
-                {
-                    if (requiredLiterals.contains(l))
-                    {
-                        continue
-                    }
-                    val newPrimeLiteral:Literal = clause.getPrimeLiteral()!!
-                    //assert{!requiredLiterals.contains(l)}
-                    //assert{newPrimeLiteral == l}
-                    requiredLiterals.add(newPrimeLiteral)
-                    //have to give the materials.getVariable its setting back, as it is now assumed that it must have this setting
-                    l.first.setTo(l.predicate)
-                    assert { clause.isSatisfied }
-                }
-            }
-        }
-        fun impliedW0(model:Set<Literal>, initialImplicant:MutableSet<Literal>,literalToClause:WatchedLiteralToClause)
-        {
-            val possiblyUnnecessaryLiterals:Collection<Literal> = model.filter {! initialImplicant.contains(it) }
-            for (l: Literal in possiblyUnnecessaryLiterals)
-            {
-                println("Updating(w0): $l")
-                val prevSetting:Boolean = l.variable.boolSetting!!
-                //l.materials.getVariable.unset()
-                impliedW(Literal(l.variable,!l.predicate),initialImplicant,literalToClause)
-                l.variable.setTo(prevSetting)
+            if (isRequired) {
+                primeImplicant.add(Literal(assignedVar,literalPhase))
+            }else{
+                assignedVar.unset()
+                assocClauses.forEach { it.updateWatchedLiterals(assignedVar) }
             }
         }
 
-        //prepare the clauseset to be able to reuse the clauseset object, I cant just remove falsy variables
-        //clauseSet.removeFalsyVariables() //TODO cant just remove falsy variables, if I want ot reuse the clauseSet to calculate a backbone
-        clauseSet.prepareWatchedLiteralsForImplicants()
-
-
-        //given the context that materials.Variable already stores the setting of a materials.getVariable
-        //using a literal for elements of the model and other things seems redundant
-        //however it works better like this,
-
-        //"M" in the paper, actually not a model but a partial model, an implicant
-        val model:MutableSet<Literal> = clauseSet.getPresentVariables().
-            filter { ! it.isUnset }.map { it -> Literal(it,it.boolSetting!!) }.toMutableSet()
-        //"PI" in the paper, the set of variables that are in the prime implicant
-        val primeImplicant:MutableSet<Literal> = /*mutableSetOf()*///table.getUnitVariables().toMutableSet()
-                clauseSet.getClauses().filter { it.literals.count() == 1 }.map { it.literals[0]}.toMutableSet()
-        clauseSet.resetAllWatchedLiterals()
-        //"W" in the paper
-        val literalToClause:WatchedLiteralToClause = clauseSet.getWatchedLiteralToClause()
-
-
-        //impliedW0(model,primeImplicant,literalToClause)
-
-        while(true) {
-            //get a literal that hasnt yet been set to
-            val literalToRemove:Literal = model.firstOrNull { !primeImplicant.contains(it) } ?: break
-            //println("removing "+literalToRemove)
-            model.remove(literalToRemove)
-            literalToRemove.variable.unset()
-            impliedW(literalToRemove,primeImplicant,literalToClause)
-
-        }
-
-
+        //revert literalwatches so that they serve the purpose of finding models, as expected
         ClauseWatchedLiterals.watchedLiteralsForUnitVariables = true
-        return primeImplicant
+        return primeImplicant.toSet()
     }
 
 

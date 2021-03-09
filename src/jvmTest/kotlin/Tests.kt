@@ -1,17 +1,9 @@
 package test
 
-import materials.ClauseSet
-import materials.ClauseSetWatchedLiterals
-import materials.Literal
 import algorithms.*
-import materials.Variable
-import materials.VariableIdentifier
-import materials.VariableSetting
-import materials.makeVarIds
+import materials.*
 import kotlin.test.Test
 import kotlin.test.*
-import materials.predicate
-import materials.variable
 import support.Either
 import support.Helpers
 import kotlin.math.abs
@@ -171,6 +163,7 @@ class Tests{
 
         val pi1 = Implicant.getPrimeImplicant(fehlerKlaus1)
         val pi2 = Implicant.getPrimeImplicantWithWatchedLiterals(fehlerKlaus1)
+        assertTrue(ClauseWatchedLiterals.watchedLiteralsForUnitVariables)
         assertTrue(pi1.find { it.variable.id == "B" && !it.predicate } == null)
         assertTrue(pi2.find { it.variable.id == "B" && !it.predicate } == null)
 

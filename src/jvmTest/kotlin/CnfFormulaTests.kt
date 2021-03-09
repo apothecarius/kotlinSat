@@ -47,8 +47,8 @@ class CnfFormulaTests {
             }
 
             //verify that var2clauses is completely correct
-            assertEquals(idToVar.size,form.var2Clauses.size) //both should count the number of variables
-            for((curVar,occurences) in form.var2Clauses)
+            assertEquals(idToVar.size,form.getOccurencesLookup().size) //both should count the number of variables
+            for((curVar,occurences) in form.getOccurencesLookup())
             {
                 assertTrue(occurences.all { occu -> occu.literals.any { lit -> curVar == lit.variable } })
             }
@@ -82,9 +82,7 @@ class CnfFormulaTests {
         assertTrue(formula.isFresh)
         assertEquals(formula.getClauses().size, 1250)
         assertEquals(formula.getPresentVariables().count(),209)
-
-        //TODO satisfiability check should return true, but takes forever without VSIDS
-        //the correct backbone is also noted
+        assertTrue(cdclSAT(formula))
     }
 
     @Test

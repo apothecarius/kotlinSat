@@ -12,7 +12,7 @@ open class ClauseSet(c:Array<Clause>)
 {
     private val clauses : MutableList<Clause> = c.toMutableList()
     private val activityHeap: Heap<Variable> = Heap(this.getPresentVariables())
-    internal val var2Clauses:Map<Variable,MutableList<Clause>> = this.getPresentVariables()
+    protected val occurences:Map<Variable,MutableList<Clause>> = this.getPresentVariables()
         .associateWith { mutableListOf() }
 
     //initialize literal activity with the number of occurences
@@ -24,7 +24,7 @@ open class ClauseSet(c:Array<Clause>)
                 curLit.first.activity++
 
                 //setup reverse lookup
-                var2Clauses[curLit.first]!!.add(curClause)
+                occurences[curLit.first]!!.add(curClause)
             }}
     }
 
@@ -33,7 +33,7 @@ open class ClauseSet(c:Array<Clause>)
     /*
      * Pass an immutable reference
      */
-    fun getVarToClauses():Map<Variable,List<Clause>> = this.var2Clauses
+    open fun getOccurencesLookup():Map<Variable,List<Clause>> = this.occurences
 
     fun makeVsidsAssignment(): Variable
     {
@@ -78,7 +78,7 @@ open class ClauseSet(c:Array<Clause>)
         this.clauses.add(c)
         //also add it to the reverse lookup
         c.literals.map { it.first }.forEach { resolventsVar ->
-            this.var2Clauses[resolventsVar]!!.add(c)
+            this.occurences[resolventsVar]!!.add(c)
         }
     }
 
@@ -104,7 +104,7 @@ open class ClauseSet(c:Array<Clause>)
         val metVars:MutableSet<Variable> = mutableSetOf()
         for (c: Clause in clauses)
         {
-            for(v: Variable in c.literals.map { it -> it.first })
+            for(v: Variable in c.literals.map { it.first })
             {
                 if (metVars.contains(v)) {
                     continue
@@ -133,7 +133,7 @@ open class ClauseSet(c:Array<Clause>)
     open fun getAndSetUnitsWithReason(mostRecentAssignment:Variable? = null) :
             List<Pair<Literal, Clause>>
     {
-        var retu:MutableList<Pair<Literal, Clause>> = mutableListOf()
+        val retu:MutableList<Pair<Literal, Clause>> = mutableListOf()
 
 
         //as long as you find unit clauses
@@ -155,7 +155,7 @@ open class ClauseSet(c:Array<Clause>)
             }
             else
             {
-                this.var2Clauses[varsToPropagate.removeFirst()]!!
+                this.occurences[varsToPropagate.removeFirst()]!!
             }
 
             for(c : Clause in clausesToCheck)
@@ -164,7 +164,7 @@ open class ClauseSet(c:Array<Clause>)
                     return retu
                 }
 
-                var curUnit:Pair<Variable,Boolean>? = c.currentUnit
+                val curUnit:Pair<Variable,Boolean>? = c.currentUnit
                 if(curUnit != null)
                 {
                     curUnit.first.setTo(when(curUnit.second){
@@ -193,7 +193,7 @@ open class ClauseSet(c:Array<Clause>)
     {
         this.resetVars(this.getPresentVariables().toList())
     }
-    open fun resetVars(vs : List<Variable>):Unit
+    open fun resetVars(vs : List<Variable>)
     {
         for(uv: Variable in vs)
         {
@@ -204,7 +204,7 @@ open class ClauseSet(c:Array<Clause>)
     }
     fun getVariableSetting():Set<Literal> =
             this.getPresentVariables().filter{ ! it.isUnset}.
-                map { it -> Pair(it,it.boolSetting!!) }.toSet()
+                map { Pair(it,it.boolSetting!!) }.toSet()
 
     fun setTo(variableSettings: Set<Literal>) {
         for (e in variableSettings) {
@@ -228,6 +228,8 @@ open class ClauseSet(c:Array<Clause>)
      * Caches present variables and gives a lookup by their identifier
      * TODO: If you add new variables, like Tseitin, then this lookup must be
      * cleared with invalidateVarnameLookup
+     * ALTERNATIVELY assert that new variables are never added to a ClauseSet.
+     * If you want to use Tseitin transformation, create a new formula object
      */
     private var varnameToVariable:Map<VariableIdentifier,Variable>? = null
 
@@ -255,9 +257,9 @@ open class ClauseSet(c:Array<Clause>)
      */
     fun separateClauses():List<List<Clause>> {
 
-        var retu: MutableSet<FormulaGroup> = mutableSetOf()
+        val retu: MutableSet<FormulaGroup> = mutableSetOf()
         for (c: Clause in this.getClauses()) {
-            var groups:List<FormulaGroup> = retu.filter { groupToCheck -> groupToCheck.first.any { //all groups where any materials.getVariable
+            val groups:List<FormulaGroup> = retu.filter { groupToCheck -> groupToCheck.first.any { //all groups where any materials.getVariable
                 varToCheck -> c.literals.map { it.variable }.contains(varToCheck) }} //is contained in the variables of c
 
             if (groups.isEmpty()) {
@@ -266,17 +268,17 @@ open class ClauseSet(c:Array<Clause>)
                 //remove the found sets from retu, merge them and add that to retu
                 retu.removeAll(groups)
 
-                val occuringVars:Set<Variable> = groups.map { it.first }.fold(setOf<Variable>(),
+                val occuringVars:Set<Variable> = groups.map { it.first }.fold(setOf(),
                         { acc: Set<Variable>, mutableSet: MutableSet<Variable> -> acc.union(mutableSet) }).
                         union(c.literals.map { it.variable })
 
-                val associatedClauses: MutableSet<Clause> = groups.map { it.second.toSet() }.fold(setOf<Clause>(),
+                val associatedClauses: MutableSet<Clause> = groups.map { it.second.toSet() }.fold(setOf(),
                         { acc: Set<Clause>, mutableSet: Set<Clause> -> acc.union(mutableSet) }).toMutableSet()
                 associatedClauses.add(c)
                 retu.add(FormulaGroup(occuringVars.toMutableSet(), associatedClauses.toMutableList()))
             }
         }
-        return retu.map { it -> it.second }
+        return retu.map { it.second }
     }
 }
 private typealias FormulaGroup = Pair<MutableSet<Variable>, MutableList<Clause>>

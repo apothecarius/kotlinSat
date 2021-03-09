@@ -32,8 +32,6 @@ private fun SudokuVariableSet.getSudokuField(blockIdx: Int, fieldIdx: Int, block
  * with the sat solver
  * The constructor can be given a set of fixed field assignments with both
  * x and y indices in [1,9]]
- *
- * TODO: Add functions for intuitive input (sudoku puzzle statement) and output (print result as integer array or string)
  */
 class Sudoku(fixedVars: Array<Triple<Int,Int,Int>>) : ClauseSetWatchedLiterals(makeSudokuFormula(fixedVars))
 {

@@ -49,20 +49,6 @@ var conflictCounter:Int = 0
 
 
 /**
- * Returns all variables that were set without a decision (except those that
- * were reverted due to conflicts).
- * If multiple SAT solutions are possible then the returned variables
- * have the same setting in all of those.
- * Note that some tautological variablesettings might not be included, if it
- * was guessed correctly initially
- *
- * Note that a set of variables might be returned independent of whether the clauseSet
- * is actually satisfiable
- */
-fun CdclTable.getUnitVariables():Set<Literal> =
-        this.filter { it.level == 0 }.map { Pair(it.affectedVariable,it.value) }.toSet()
-
-/**
  * Removes all entries with or below the given level and
  * returns a list of all variables that were unset
  */
@@ -70,7 +56,7 @@ fun CdclTable.backtrackTo(untilLevel: Int): List<Variable>
 {
     fun allBelowLevel(entry:CdclTableEntry):Boolean = entry.level > untilLevel
 
-    var retu:MutableList<Variable> = mutableListOf()
+    val retu:MutableList<Variable> = mutableListOf()
 
     for(x in this.filter {allBelowLevel(it)}.map {it.affectedVariable })
     {
@@ -261,7 +247,7 @@ fun cdclSolve(toSolve: ClauseSet, variablePriorityQueue:Map<Variable,Boolean>? =
             if(decidedVariable == null){
                 if(useVsids)
                 {
-                    decidedVariable = toSolve.makeVsidsAssignment() //TODO get this to work
+                    decidedVariable = toSolve.makeVsidsAssignment()
                 }else{
                     decidedVariable = toSolve.getAnyFreeVariable()!!
                     decidedVariable.setTo(decisionVariableSetting)

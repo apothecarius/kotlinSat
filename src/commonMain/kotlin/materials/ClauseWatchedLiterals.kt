@@ -28,6 +28,7 @@ class ClauseWatchedLiterals constructor(disjunction: Array<Literal>) : Clause(di
          * of finding the primeImplicant of the associated clauseSet.
          * If set to false the watchedLiterals will stay on literals that fulfill
          * the clause, if true on unset literals
+         * TODO be explicit and use an enum
          */
         var watchedLiteralsForUnitVariables: Boolean = true
 
@@ -197,7 +198,6 @@ class ClauseWatchedLiterals constructor(disjunction: Array<Literal>) : Clause(di
     // determined in O(1)
     override val isUnit: Boolean
         get() {
-            assert { watchedLiteralsForUnitVariables }
             return this.watchedHead == this.watchedTail &&
                     this.literals[this.watchedTail].isUnset
         }
